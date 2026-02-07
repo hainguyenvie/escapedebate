@@ -5,6 +5,7 @@ export interface IStorage {
   createDebate(debate: InsertDebate): Promise<Debate>;
   getDebate(id: number): Promise<Debate | undefined>;
   getDebates(): Promise<Debate[]>;
+  deleteDebate(id: number): Promise<void>;
   createMessage(message: InsertMessage): Promise<Message>;
   getMessages(debateId: number): Promise<Message[]>;
 }
@@ -40,6 +41,28 @@ export class SupabaseStorage implements IStorage {
 
     if (error) throw new Error(`Failed to get debates: ${error.message}`);
     return data || [];
+  }
+
+  async deleteDebate(id: number): Promise<void> {
+    // Delete messages first (foreign key constraint)
+    const { error: messagesError } = await supabase
+      .from("messages")
+      .delete()
+      .eq("debate_id", id);
+
+    if (messagesError) {
+      throw new Error(`Failed to delete messages: ${messagesError.message}`);
+    }
+
+    // Then delete the debate
+    const { error: debateError } = await supabase
+      .from("debates")
+      .delete()
+      .eq("id", id);
+
+    if (debateError) {
+      throw new Error(`Failed to delete debate: ${debateError.message}`);
+    }
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {

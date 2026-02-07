@@ -2,22 +2,30 @@ import { Link } from "wouter";
 
 export function Header() {
   return (
-    <header className="w-full py-6 px-4 md:px-8 border-b border-gray-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <Link href="/" className="group cursor-pointer">
-           <div className="flex items-center gap-1">
-             <span className="text-3xl md:text-4xl font-display font-bold text-primary tracking-tighter group-hover:scale-105 transition-transform">
-               ESCAPE
-             </span>
-             <span className="text-2xl md:text-3xl font-display font-light text-slate-800 tracking-tight">
-               | AI DEBATE
-             </span>
-           </div>
-           <p className="text-[10px] md:text-xs font-bold tracking-[0.2em] text-slate-400 mt-1 uppercase pl-1">
-             Press Escape, Shape Your Mind
-           </p>
-        </Link>
-      </div>
+    <header className="mb-12">
+      <Link href="/">
+        <div className="relative rounded-xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-4 shadow-xl cursor-pointer overflow-hidden">
+          {/* Background Image */}
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: 'url(/images/headerBackground.jpg)' }}
+          />
+          {/* Overlay for better text readability */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-black/20" />
+
+          {/* Content */}
+          <div className="relative z-10 flex items-center gap-2">
+            <img
+              src="/images/Logo.png"
+              alt="ESCAPE AI DEBATE"
+              className="h-10 md:h-12 w-auto object-contain"
+            />
+          </div>
+          <div className="relative z-10 text-[10px] md:text-xs font-display font-bold text-white/80 uppercase tracking-widest text-center md:text-right">
+            PRESS ESCAPE, SHAPE YOUR MIND
+          </div>
+        </div>
+      </Link>
     </header>
   );
 }

@@ -86,8 +86,13 @@ export default {
         sans: ["var(--font-sans)"],
         serif: ["var(--font-serif)"],
         mono: ["var(--font-mono)"],
-        display: ["'Oswald'", "sans-serif"],
-        body: ["'Inter'", "sans-serif"],
+        display: ["'Space Grotesk'", "sans-serif"],
+        body: ["'Plus Jakarta Sans'", "sans-serif"],
+      },
+      backgroundImage: {
+        'dot-pattern': "radial-gradient(#E31E63 1px, transparent 1px)",
+        'header-gradient': "linear-gradient(90deg, #880E4F 0%, #E31E63 50%, #FF4081 100%)",
+        'footer-gradient': "linear-gradient(135deg, #880E4F 0%, #E31E63 100%)",
       },
       keyframes: {
         "accordion-down": {

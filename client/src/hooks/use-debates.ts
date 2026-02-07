@@ -39,7 +39,7 @@ export function useCreateDebate() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      
+
       if (!res.ok) {
         if (res.status === 400) {
           const error = api.debates.create.responses[400].parse(await res.json());
@@ -47,7 +47,7 @@ export function useCreateDebate() {
         }
         throw new Error("Failed to create debate");
       }
-      
+
       return api.debates.create.responses[201].parse(await res.json());
     },
     onSuccess: () => {
@@ -77,9 +77,9 @@ export function useSendMessage() {
       });
 
       if (!res.ok) {
-         if (res.status === 404) {
-             throw new Error("Debate not found");
-         }
+        if (res.status === 404) {
+          throw new Error("Debate not found");
+        }
         throw new Error("Failed to send message");
       }
 
@@ -87,6 +87,37 @@ export function useSendMessage() {
     },
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: [api.debates.get.path, id] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useDeleteDebate() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/debates/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to delete debate");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.debates.list.path] });
+      toast({
+        title: "Success",
+        description: "Debate deleted successfully",
+      });
     },
     onError: (error) => {
       toast({

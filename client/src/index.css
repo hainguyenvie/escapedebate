@@ -1,55 +1,55 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --font-sans: 'Inter', sans-serif;
-  --font-display: 'Oswald', sans-serif;
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
 
   /* Primary Pink/Red #E91E63 */
   --primary: 339 82% 52%;
   --primary-foreground: 0 0% 100%;
-  
+
   --secondary: 339 20% 96%;
   --secondary-foreground: 339 82% 52%;
-  
+
   --background: 0 0% 100%;
   --foreground: 222 47% 11%;
-  
+
   --muted: 210 40% 96%;
   --muted-foreground: 215 16% 47%;
-  
+
   --accent: 339 82% 52%;
   --accent-foreground: 0 0% 100%;
-  
+
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  
+
   --border: 214 32% 91%;
   --input: 214 32% 91%;
   --ring: 339 82% 52%;
-  
+
   --radius: 0.75rem;
 }
 
 .dark {
   --background: 222 47% 11%;
   --foreground: 210 40% 98%;
-  
+
   --primary: 339 82% 52%;
   --primary-foreground: 0 0% 100%;
-  
+
   --secondary: 217 33% 17%;
   --secondary-foreground: 210 40% 98%;
-  
+
   --muted: 217 33% 17%;
   --muted-foreground: 215 20% 65%;
-  
+
   --accent: 339 82% 52%;
   --accent-foreground: 0 0% 100%;
-  
+
   --border: 217 33% 17%;
   --input: 217 33% 17%;
   --ring: 339 82% 52%;
@@ -61,7 +61,12 @@
     font-family: var(--font-sans);
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-display);
     @apply font-bold tracking-wide uppercase;
   }
@@ -75,9 +80,42 @@
 
 /* Custom Scrollbar for Chat */
 .scrollbar-hide::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
+
 .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Dot Pattern Background */
+.dot-bg {
+  background-size: 24px 24px;
+}
+
+/* Glass Card Effect */
+.glass-card {
+  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.dark .glass-card {
+  background: rgba(30, 41, 59, 0.8);
+}
+
+/* Chat Container Scrollbar */
+.chat-container {
+  height: calc(100vh - 420px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #E31E63 transparent;
+}
+
+.chat-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-container::-webkit-scrollbar-thumb {
+  background-color: #E31E63;
+  border-radius: 20px;
 }

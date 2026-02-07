@@ -3,7 +3,10 @@ import { z } from "zod";
 export interface Debate {
   id: number;
   topic: string;
+  refined_topic?: string;
   side: string;
+  current_round: number;
+  moderator_intro?: string;
   created_at: string;
 }
 
@@ -18,6 +21,9 @@ export interface Message {
 export const insertDebateSchema = z.object({
   topic: z.string().min(1),
   side: z.string().min(1),
+  refined_topic: z.string().optional(),
+  current_round: z.number().optional(),
+  moderator_intro: z.string().optional(),
 });
 
 export const insertMessageSchema = z.object({
