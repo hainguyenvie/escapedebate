@@ -46,8 +46,7 @@ shared/
 ### Environment Variables
 - `SUPABASE_URL` - Supabase project URL
 - `SUPABASE_ANON_KEY` - Supabase anon/public key
-- `AI_INTEGRATIONS_OPENAI_API_KEY` - OpenAI API key (via Replit)
-- `AI_INTEGRATIONS_OPENAI_BASE_URL` - OpenAI base URL (via Replit)
+- `OPENAI_API_KEY` - OpenAI API key (user's own key)
 
 ## User Preferences
 - Vietnamese language for UI text
