@@ -70,7 +70,7 @@ export async function registerRoutes(
 
       // 1. Save user message
       await storage.createMessage({
-        debateId: id,
+        debate_id: id,
         role: "user",
         content
       });
@@ -112,7 +112,7 @@ export async function registerRoutes(
 
       // 5. Save AI message
       const aiMessage = await storage.createMessage({
-        debateId: id,
+        debate_id: id,
         role: "assistant",
         content: aiContent
       });

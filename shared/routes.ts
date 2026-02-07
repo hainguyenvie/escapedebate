@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertDebateSchema, debates, messages } from './schema';
+import { insertDebateSchema, type Debate, type Message } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -20,7 +20,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/debates' as const,
       responses: {
-        200: z.array(z.custom<typeof debates.$inferSelect>()),
+        200: z.array(z.custom<Debate>()),
       },
     },
     create: {
@@ -28,7 +28,7 @@ export const api = {
       path: '/api/debates' as const,
       input: insertDebateSchema,
       responses: {
-        201: z.custom<typeof debates.$inferSelect>(),
+        201: z.custom<Debate>(),
         400: errorSchemas.validation,
       },
     },
@@ -37,8 +37,8 @@ export const api = {
       path: '/api/debates/:id' as const,
       responses: {
         200: z.object({
-          debate: z.custom<typeof debates.$inferSelect>(),
-          messages: z.array(z.custom<typeof messages.$inferSelect>())
+          debate: z.custom<Debate>(),
+          messages: z.array(z.custom<Message>())
         }),
         404: errorSchemas.notFound,
       },
@@ -50,7 +50,7 @@ export const api = {
         content: z.string()
       }),
       responses: {
-        201: z.custom<typeof messages.$inferSelect>(), // Returns the AI response
+        201: z.custom<Message>(),
         404: errorSchemas.notFound,
       },
     }

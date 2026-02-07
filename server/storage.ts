@@ -1,6 +1,5 @@
-import { debates, messages, type Debate, type InsertDebate, type Message, type InsertMessage } from "@shared/schema";
-import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import type { Debate, InsertDebate, Message, InsertMessage } from "@shared/schema";
+import { supabase } from "./db";
 
 export interface IStorage {
   createDebate(debate: InsertDebate): Promise<Debate>;
@@ -10,29 +9,60 @@ export interface IStorage {
   getMessages(debateId: number): Promise<Message[]>;
 }
 
-export class DatabaseStorage implements IStorage {
+export class SupabaseStorage implements IStorage {
   async createDebate(debate: InsertDebate): Promise<Debate> {
-    const [newDebate] = await db.insert(debates).values(debate).returning();
-    return newDebate;
+    const { data, error } = await supabase
+      .from("debates")
+      .insert(debate)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to create debate: ${error.message}`);
+    return data;
   }
 
   async getDebate(id: number): Promise<Debate | undefined> {
-    const [debate] = await db.select().from(debates).where(eq(debates.id, id));
-    return debate;
+    const { data, error } = await supabase
+      .from("debates")
+      .select()
+      .eq("id", id)
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   async getDebates(): Promise<Debate[]> {
-    return await db.select().from(debates).orderBy(desc(debates.createdAt));
+    const { data, error } = await supabase
+      .from("debates")
+      .select()
+      .order("created_at", { ascending: false });
+
+    if (error) throw new Error(`Failed to get debates: ${error.message}`);
+    return data || [];
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
-    const [newMessage] = await db.insert(messages).values(message).returning();
-    return newMessage;
+    const { data, error } = await supabase
+      .from("messages")
+      .insert(message)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to create message: ${error.message}`);
+    return data;
   }
 
   async getMessages(debateId: number): Promise<Message[]> {
-    return await db.select().from(messages).where(eq(messages.debateId, debateId)).orderBy(messages.createdAt);
+    const { data, error } = await supabase
+      .from("messages")
+      .select()
+      .eq("debate_id", debateId)
+      .order("created_at", { ascending: true });
+
+    if (error) throw new Error(`Failed to get messages: ${error.message}`);
+    return data || [];
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new SupabaseStorage();

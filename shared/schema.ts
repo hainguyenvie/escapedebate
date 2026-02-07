@@ -1,26 +1,30 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const debates = pgTable("debates", {
-  id: serial("id").primaryKey(),
-  topic: text("topic").notNull(),
-  side: text("side").notNull(), // 'support' or 'oppose'
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export interface Debate {
+  id: number;
+  topic: string;
+  side: string;
+  created_at: string;
+}
+
+export interface Message {
+  id: number;
+  debate_id: number;
+  role: string;
+  content: string;
+  created_at: string;
+}
+
+export const insertDebateSchema = z.object({
+  topic: z.string().min(1),
+  side: z.string().min(1),
 });
 
-export const messages = pgTable("messages", {
-  id: serial("id").primaryKey(),
-  debateId: integer("debate_id").notNull().references(() => debates.id),
-  role: text("role").notNull(), // 'user' or 'ai'
-  content: text("content").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export const insertMessageSchema = z.object({
+  debate_id: z.number(),
+  role: z.string().min(1),
+  content: z.string().min(1),
 });
 
-export const insertDebateSchema = createInsertSchema(debates).omit({ id: true, createdAt: true });
-export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
-
-export type Debate = typeof debates.$inferSelect;
 export type InsertDebate = z.infer<typeof insertDebateSchema>;
-export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;

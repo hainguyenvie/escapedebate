@@ -28,7 +28,7 @@ export function DebateHistory() {
 
   // Sort by newest first
   const sortedDebates = [...debates].sort(
-    (a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+    (a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime()
   );
 
   return (
@@ -47,7 +47,7 @@ export function DebateHistory() {
                 </span>
                 <span className="text-xs text-slate-400 flex items-center gap-1 ml-auto">
                   <Clock className="w-3 h-3" />
-                  {formatDistanceToNow(new Date(debate.createdAt!), { addSuffix: true, locale: vi })}
+                  {formatDistanceToNow(new Date(debate.created_at!), { addSuffix: true, locale: vi })}
                 </span>
               </div>
               <h3 className="text-lg font-bold text-slate-800 line-clamp-2 group-hover:text-primary transition-colors">
