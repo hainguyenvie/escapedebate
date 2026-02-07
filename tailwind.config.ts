@@ -86,6 +86,8 @@ export default {
         sans: ["var(--font-sans)"],
         serif: ["var(--font-serif)"],
         mono: ["var(--font-mono)"],
+        display: ["'Oswald'", "sans-serif"],
+        body: ["'Inter'", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {
