@@ -102,6 +102,42 @@ YÊU CẦU:
         moderator_intro: moderatorIntro
       });
 
+      // LOGIC MỚI: Nếu người dùng chọn phe PHẢN ĐỐI (Oppose)
+      // Thì AI là phe ỦNG HỘ (Support) và phải NÓI TRƯỚC (Opening Statement)
+      if (input.side === "oppose") {
+        const aiOpeningPrompt = `Bạn là chuyên gia tranh luận trong "ESCAPE AI DEBATE".
+🎯 MOTION: "${debate.refined_topic}"
+📌 VỊ TRÍ CỦA BẠN: Bên KHẲNG ĐỊNH - ỦNG HỘ Motion.
+📌 ĐỐI THỦ: Bên PHỦ ĐỊNH - PHẢN ĐỐI Motion.
+
+🔥 NHIỆM VỤ VÒNG 1 - PHÁT BIỂU MỞ ĐẦU (AI ĐI TRƯỚC):
+Bạn có nhiệm vụ mở màn cuộc tranh luận. Hãy đưa ra hệ thống luận điểm ủng hộ Motion một cách vững chắc.
+
+📋 YÊU CẦU NỘI DUNG:
+1. Định nghĩa rõ ràng Motion (Model debate).
+2. Đưa ra 2-3 luận điểm cốt lõi (Core arguments) để bảo vệ Motion.
+3. Vì bạn nói trước, hãy thiết lập "Burden of Proof" (Gánh nặng chứng minh) cho phe Phản đối.
+
+⚡ CHIẾN THUẬT:
+- Phong thái tự tin, tiên phong.
+- Dự đoán trước các luận điểm phản đối và chặn trước (Pre-empting).
+
+📏 ĐỘ DÀI: 150-200 từ.`;
+
+        const aiResponse = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [{ role: "system", content: aiOpeningPrompt }]
+        });
+
+        const aiContent = aiResponse.choices[0].message.content || "Tôi xin đưa ra luận điểm mở đầu.";
+
+        await storage.createMessage({
+          debate_id: debate.id,
+          role: "assistant",
+          content: aiContent
+        });
+      }
+
       res.status(201).json(debate);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -163,164 +199,127 @@ YÊU CẦU:
       const motion = debate.refined_topic || debate.topic;
       const currentRound = debate.current_round || 1;
 
-      // 4. Tạo system prompt dựa vào vòng hiện tại
-      let systemPrompt = '';
+      // Tính toán next round info trước để dùng chung
+      const nextRound = currentRound + 1;
+      const isLastRound = currentRound >= 5;
+      const nextRoundName = isLastRound ? "KẾT THÚC DEBATE"
+        : nextRound === 2 ? "Vòng 2: Đưa ra 3 lập luận chính kèm bằng chứng"
+          : nextRound === 3 ? "Vòng 3: Phản bác chéo"
+            : nextRound === 4 ? "Vòng 4: Tổng kết"
+              : "Vòng 5: Kết luận";
 
-      if (currentRound === 1) {
-        // VÒNG 1: Phát biểu mở đầu - Phản biện sắc bén
-        systemPrompt = `Bạn là chuyên gia tranh luận chuyên nghiệp trong cuộc "ESCAPE AI DEBATE".
+      // =================================================================================
+      // LOGIC XỬ LÝ THEO PHE (SIDE)
+      // =================================================================================
 
+      let aiMessage = null; // Để return cho client nếu có
+
+      if (debate.side === 'support') {
+        // SCENARIO A: USER LÀ ỦNG HỘ (SUPPORT)
+        // Flow: User nói trước (đã lưu ở trên) -> AI phản biện (kết thúc vòng) -> Moderator -> Close Round
+
+        let systemPrompt = '';
+        if (currentRound === 1) {
+          systemPrompt = `Bạn là chuyên gia tranh luận chuyên nghiệp trong cuộc "ESCAPE AI DEBATE".
 🎯 MOTION: "${motion}"
-
 📌 VỊ TRÍ CỦA BẠN: Bên ${aiSide} - ${aiSideAction} Motion
 📌 ĐỐI THỦ: Bên ${userSide} - ${userSideAction} Motion
 
 🔥 NHIỆM VỤ VÒNG 1 - PHÁT BIỂU MỞ ĐẦU:
 Dựa vào Motion, đưa ra lập luận ${aiSideAction.toLowerCase()} Motion một cách sắc bén và thuyết phục.
+(Tham chiếu logic cũ: Phản biện lại User vừa nói)`;
+        } else if (currentRound === 2) {
+          systemPrompt = `Bạn là chuyên gia tranh luận. Motion: "${motion}". Vòng 2.
+Vị trí: Bên ${aiSide}. Nhiệm vụ: Triển khai 3 Lập luận Chính (3 Pillars) có bằng chứng để phản bác đối thủ.`;
+        } else if (currentRound === 3) {
+          systemPrompt = `Bạn là chuyên gia tranh luận. Motion: "${motion}". Vòng 3 - Phản bác chéo.
+Vị trí: Bên ${aiSide}. Nhiệm vụ: Đặt câu hỏi chất vấn và bóc tách mâu thuẫn của đối thủ.`;
+        } else if (currentRound === 4) {
+          systemPrompt = `Bạn là chuyên gia tranh luận. Motion: "${motion}". Vòng 4 - Tổng kết.
+Vị trí: Bên ${aiSide}. Nhiệm vụ: Chứng minh tại sao bên bạn thắng thế qua các Clash points.`;
+        } else {
+          systemPrompt = `Bạn là chuyên gia tranh luận. Motion: "${motion}". Vòng 5 - Kết luận.
+Vị trí: Bên ${aiSide}. Nhiệm vụ: Final Statement cảm xúc.`;
+        }
 
-📋 YÊU CẦU NỘI DUNG:
-1. Đưa ra các lập luận hợp lý, sắc bén để bảo vệ quan điểm ${aiSideAction} của bạn
-2. Xác định và làm rõ các thuật ngữ chính trong Motion
-3. Tóm tắt ngắn gọn 2-3 điểm chính của bạn
-4. Các lập luận phải đủ mạnh để có thể triển khai thành 3 luận điểm cụ thể ở vòng 2
 
-⚡ CHIẾN THUẬT TÂM LÝ:
-- Khuyến khích sự bất đồng thực sự (genuine disagreement)
-- Tạo ra sự căng thẳng tư duy, buộc đối thủ phải suy nghĩ lại niềm tin của họ
-- Không nịnh bợ hay tỏ ra quá lịch sự - hãy thách thức trực tiếp
+        // 5. Call AI (Phản biện lại User)
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...history.map(m => ({ role: m.role as "user" | "assistant", content: m.content }))
+          ]
+        });
 
-🎯 KỸ THUẬT ĐẶT CÂU HỎI:
-- TUYỆT ĐỐI KHÔNG đưa ra leading questions (câu hỏi dẫn dắt khiến người dùng dễ đồng ý)
-- VÍ DỤ SAI: "Bạn không nghĩ rằng... phải không?" hoặc "Chắc bạn cũng đồng ý rằng..."
-- ĐÚNG: Đặt câu hỏi khiến người dùng phải khựng lại, suy nghĩ sâu, và chất vấn lại chính niềm tin của họ
-- VÍ DỤ ĐÚNG: "Nếu [assumption của đối thủ] đúng, vậy làm sao giải thích [counterexample]?" hoặc "Bạn dựa vào tiêu chí nào để khẳng định điều đó?"
+        const aiContent = response.choices[0].message.content || "Tôi không có phản hồi.";
 
-📏 QUY TẮC:
-- Độ dài: 150-200 từ (tiếng Việt)
-- Phong cách: Chuyên nghiệp, sắc bén, thách thức tư duy
-- Cấu trúc: Mở đầu ngắn gọn → Luận điểm chính (2-3 điểm) → Câu hỏi thách thức đối thủ
-- Ngôn ngữ: Tiếng Việt, trang trọng nhưng mạnh mẽ
+        // Lưu AI Message
+        aiMessage = await storage.createMessage({
+          debate_id: id,
+          role: "assistant",
+          content: aiContent
+        });
 
-💡 GHI NHỚ:
-Mục tiêu không chỉ là phản biện, mà là khiến đối thủ phải dừng lại để TƯ DUY SÂU về lập luận của họ.`;
+        // 6. Moderator Summary
+        await generateModeratorSummary(id, currentRound, nextRound, isLastRound, nextRoundName, motion);
 
       } else {
-        // CÁC VÒNG KHÁC (2-5): Sẽ implement sau
-        systemPrompt = `Bạn là chuyên gia tranh luận trong "ESCAPE AI DEBATE".
-Motion: "${motion}"
-Bạn đang ở vòng ${currentRound}.
-Bạn đại diện cho bên ${aiSide} - ${aiSideAction} Motion.
-Đối thủ đại diện cho bên ${userSide} - ${userSideAction} Motion.
+        // SCENARIO B: USER LÀ PHẢN ĐỐI (OPPOSE)
+        // Flow: 
+        // 1. AI (Support) đã nói mở đầu round (đã có trong history hoặc create debate)
+        // 2. User (Oppose) vừa nói (đã lưu ở bước 1) -> Đây là lượt KẾT THÚC VÒNG.
 
-Hãy phản biện lập luận của đối thủ một cách sắc bén và thuyết phục.
-Độ dài: 150-200 từ.`;
-      }
+        // --- 1. Moderator Summary NGAY LẬP TỨC (vì vòng đã hết) ---
+        await generateModeratorSummary(id, currentRound, nextRound, isLastRound, nextRoundName, motion);
 
-      // 5. Call AI
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt
-          },
-          ...history.map(m => ({
-            role: m.role as "user" | "assistant",
-            content: m.content
-          }))
-        ]
-      });
+        // --- 2. Nếu chưa hết debate, AI phải MỞ ĐẦU VÒNG TIẾP THEO ---
+        if (!isLastRound) {
+          let aiOpeningSystemPrompt = '';
 
-      const aiContent = response.choices[0].message.content || "Tôi không có phản hồi.";
-
-      // 5. Save AI message
-      const aiMessage = await storage.createMessage({
-        debate_id: id,
-        role: "assistant",
-        content: aiContent
-      });
-
-      // 6. Tạo Moderator Summary sau khi cả hai bên đã phát biểu
-      // Lấy lại toàn bộ history sau khi AI đã phản biện
-      const fullHistory = await storage.getMessages(id);
-
-      // Tạo prompt cho moderator summary
-      const nextRound = currentRound + 1;
-      const nextRoundName = nextRound === 2 ? "Vòng 2: Đưa ra 3 lập luận chính kèm bằng chứng"
-        : nextRound === 3 ? "Vòng 3: Phản bác chéo"
-          : nextRound === 4 ? "Vòng 4: Tổng kết"
-            : "Vòng 5: Kết luận";
-
-      const moderatorSummaryResponse = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: `Bạn là Điều phối viên chuyên nghiệp của cuộc "ESCAPE AI DEBATE".
-
-🎯 NHIỆM VỤ: Sau khi cả hai bên (Người dùng và AI) hoàn thành phát biểu ở Vòng ${currentRound}, bạn cần:
-
-1️⃣ **TÓM TẮT (Summarization)**
-Yêu cầu:
-- Tổng hợp lại những ý chính CỐT LÕI nhất của cả hai bên trong vòng vừa đối thoại
-- TÍNH KHÁCH QUAN: Không thiên vị, không nhận xét bên nào thắng/thua
-- Sử dụng cụm từ trung lập: "Về phía ${aiSide} (Máy), lập luận tập trung vào...", "Trong khi đó, ${userSide} (Người) đã nhấn mạnh rằng..."
-- TÍNH CỤ THỂ: Trích xuất ít nhất 01 từ khóa hoặc luận điểm thực tế mà người dùng vừa nhập để đưa vào phần tóm tắt (giúp cá nhân hóa và chân thực)
-
-2️⃣ **DẪN DẮT (Transition)**
-Yêu cầu:
-- Chuẩn bị tâm thế và tạo sự KỊCH TÍNH cho người dùng trước khi bước vào ${nextRoundName}
-- Gợi mở: Sử dụng câu hỏi tu từ hoặc lời thách thức nhẹ nhàng
-- Thêm động lực để người dùng sẵn sàng tiếp tục debate
-
-📋 FORMAT RESPONSE:
-Trả về JSON với cấu trúc:
-{
-  "summary": "Tóm tắt khách quan các luận điểm của cả hai bên",
-  "transition": "Câu dẫn dắt kịch tính sang vòng tiếp theo"
-}
-
-📏 QUY TẮC:
-- summary: 2-3 câu, ngắn gọn, khách quan, có trích dẫn từ khóa thực tế của user
-- transition: 1-2 câu, tạo kịch tính, gợi mở vòng tiếp theo
-- Ngôn ngữ: Tiếng Việt, trang trọng, trung lập`
-          },
-          {
-            role: "user",
-            content: `Motion: "${motion}"
-            
-Vòng ${currentRound} vừa kết thúc với các phát biểu sau:
-
-${fullHistory.map((msg, idx) => {
-              const speaker = msg.role === 'user'
-                ? `${userSide} (Người dùng)`
-                : msg.role === 'assistant'
-                  ? `${aiSide} (AI)`
-                  : 'Điều phối viên';
-              return `${idx + 1}. ${speaker}:\n${msg.content}`;
-            }).join('\n\n')}
-
-Hãy tạo phần tóm tắt và dẫn dắt cho vòng tiếp theo.`
+          if (nextRound === 2) {
+            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận. Motion: "${motion}".
+Bạn đang ở VÒNG 2. Vị trí: Bên KHẲNG ĐỊNH (AI).
+🔥 NHIỆM VỤ: Mở đầu Vòng 2 bằng cách trình bày 3 Luận điểm Chính (3 Pillars) ủng hộ Motion.
+Yêu cầu: Có bằng chứng cụ thể. Phớt lờ hoặc phản bác nhẹ các ý user vừa nói ở vòng 1.`;
+          } else if (nextRound === 3) {
+            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận. Motion: "${motion}".
+Bạn đang ở VÒNG 3 - Phản bác chéo. Vị trí: Bên KHẲNG ĐỊNH (AI).
+🔥 NHIỆM VỤ: Mở đầu Vòng 3 bằng cách đặt câu hỏi chất vấn đối thủ (User).
+Yêu cầu: Tìm lỗ hổng trong argument vòng 2 của User và đặt câu hỏi khó.`;
+          } else if (nextRound === 4) {
+            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận. Motion: "${motion}".
+Bạn đang ở VÒNG 4 - Rebuttal. Vị trí: Bên KHẲNG ĐỊNH (AI).
+🔥 NHIỆM VỤ: Tổng hợp lại debate và phản biện lại các luận điểm chính của User.`;
+          } else { // Round 5
+            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận. Motion: "${motion}".
+Bạn đang ở VÒNG 5 - Closing. Vị trí: Bên KHẲNG ĐỊNH (AI).
+🔥 NHIỆM VỤ: Đưa ra lời kết luận cuối cùng (Final Statement) đầy cảm xúc để chốt lại debate.`;
           }
-        ],
-        response_format: { type: "json_object" }
-      });
 
-      const moderatorData = JSON.parse(moderatorSummaryResponse.choices[0].message.content || "{}");
+          // Call AI to start next round
+          const response = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              { role: "system", content: aiOpeningSystemPrompt },
+              // Lấy toàn bộ history bao gồm cả moderator summary vừa tạo
+              ...(await storage.getMessages(id)).map(m => ({
+                role: m.role as "user" | "assistant" | "system",
+                content: m.content
+              }))
+            ]
+          });
 
-      // 7. Tạo nội dung moderator summary
-      const moderatorSummary = `📊 TÓM TẮT VÒNG ${currentRound}:
-${moderatorData.summary || 'Cả hai bên đã trình bày quan điểm của mình.'}
+          const aiNextRoundContent = response.choices[0].message.content || "Mời bạn tiếp tục.";
 
-🎯 DẪN DẮT:
-${moderatorData.transition || `Hãy chuẩn bị cho ${nextRoundName}!`}`;
-
-      // 8. Save moderator summary as system message
-      await storage.createMessage({
-        debate_id: id,
-        role: "system",
-        content: moderatorSummary
-      });
+          // Lưu AI Message (Mở đầu vòng mới)
+          aiMessage = await storage.createMessage({
+            debate_id: id,
+            role: "assistant", // Vẫn là assistant
+            content: aiNextRoundContent
+          });
+        }
+      }
 
       res.status(201).json(aiMessage);
 
@@ -334,4 +333,66 @@ ${moderatorData.transition || `Hãy chuẩn bị cho ${nextRoundName}!`}`;
   seedDatabase().catch(console.error);
 
   return httpServer;
+}
+
+// Helper function outside request handler
+async function generateModeratorSummary(
+  debateId: number, currentRound: number,
+  nextRound: number, isLastRound: boolean, nextRoundName: string, motion: string
+) {
+  const fullHistory = await storage.getMessages(debateId);
+
+  const moderatorSystemPrompt = isLastRound
+    ? `Bạn là Điều phối viên. Debate đã kết thúc sau 5 vòng.
+         NHIỆM VỤ: Tổng kết, cảm ơn, tuyên bố kết thúc.
+         Trả về JSON: {"summary": "Tổng kết...", "transition": "Lời chào..."}`
+    : `Bạn là Điều phối viên chuyên nghiệp của cuộc "ESCAPE AI DEBATE".
+
+🎯 NHIỆM VỤ: Sau khi cả hai bên (Người dùng và AI) hoàn thành phát biểu ở Vòng ${currentRound}, bạn cần:
+
+1️⃣ **TÓM TẮT (Summarization)**
+- Tổng hợp ý chính CỐT LÕI của cả hai bên
+- Khách quan, trích dẫn từ khóa của User
+
+2️⃣ **DẪN DẮT (Transition)**
+- Chuẩn bị tâm thế cho ${nextRoundName}
+- Gợi mở câu hỏi tu từ
+
+📋 FORMAT RESPONSE (JSON):
+{
+  "summary": "Tóm tắt khách quan...",
+  "transition": "Câu dẫn dắt kịch tính..."
+}
+
+Rule: Tiếng Việt, trang trọng.`;
+
+  const moderatorSummaryResponse = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      { role: "system", content: moderatorSystemPrompt },
+      {
+        role: "user",
+        content: `Motion: "${motion}"\nVòng ${currentRound} history:\n` + fullHistory.map(m => `${m.role}: ${m.content}`).join('\n')
+      }
+    ],
+    response_format: { type: "json_object" }
+  });
+
+  const moderatorData = JSON.parse(moderatorSummaryResponse.choices[0].message.content || "{}");
+
+  const moderatorSummary = `📊 TÓM TẮT VÒNG ${currentRound}:
+${moderatorData.summary || 'Cả hai bên đã trình bày quan điểm.'}
+
+🎯 DẪN DẮT:
+${moderatorData.transition || `Hãy chuẩn bị cho vòng tiếp theo!`}`;
+
+  await storage.createMessage({
+    debate_id: debateId,
+    role: "system",
+    content: moderatorSummary
+  });
+
+  if (!isLastRound) {
+    await storage.updateDebateRound(debateId, nextRound);
+  }
 }

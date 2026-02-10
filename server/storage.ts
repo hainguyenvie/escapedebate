@@ -8,6 +8,7 @@ export interface IStorage {
   deleteDebate(id: number): Promise<void>;
   createMessage(message: InsertMessage): Promise<Message>;
   getMessages(debateId: number): Promise<Message[]>;
+  updateDebateRound(id: number, round: number): Promise<void>;
 }
 
 export class SupabaseStorage implements IStorage {
@@ -85,6 +86,15 @@ export class SupabaseStorage implements IStorage {
 
     if (error) throw new Error(`Failed to get messages: ${error.message}`);
     return data || [];
+  }
+
+  async updateDebateRound(id: number, round: number): Promise<void> {
+    const { error } = await supabase
+      .from("debates")
+      .update({ current_round: round })
+      .eq("id", id);
+
+    if (error) throw new Error(`Failed to update debate round: ${error.message}`);
   }
 }
 
