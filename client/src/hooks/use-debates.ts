@@ -53,13 +53,6 @@ export function useCreateDebate() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.debates.list.path] });
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
   });
 }
 

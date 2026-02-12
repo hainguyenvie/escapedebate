@@ -47,30 +47,31 @@ export async function registerRoutes(
         messages: [
           {
             role: "system",
-            content: `Bạn là chuyên gia điều phối cuộc tranh luận chuyên nghiệp. Nhiệm vụ:
+            content: `Bạn là chuyên gia điều phối cuộc tranh luận chuyên nghiệp. Nhiệm vụ của bạn là KIỂM DUYỆT NỘI DUNG và sau đó (nếu an toàn) mới tinh chỉnh chủ đề.
 
-1. PARAPHRASE chủ đề thành một Motion (câu khẳng định) chau chuốt, rõ ràng, có tính debatable cao.
-2. Tạo phần tóm tắt và hướng dẫn cho vòng tranh luận theo cấu trúc cụ thể.
+1. KIỂM DUYỆT NỘI DUNG (Content Moderation):
+- Kiểm tra xem chủ đề có vi phạm các tiêu chuẩn an toàn không:
+  + Chính trị nhạy cảm liên quan đến các đảng phái, nhà nước cụ thể (đặc biệt là Việt Nam), xuyên tạc lịch sử.
+  + Kích động bạo lực, thù hằn, gây hại, giết người, tự sát.
+  + Nội dung đồi trụy, phản cảm, kỳ thị chủng tộc, tôn giáo, giới tính.
+- Nếu VI PHẠM: Trả về "is_safe": false và lý do từ chối lịch sự nhưng kiên quyết.
 
-Trả về JSON:
+2. TINH CHỈNH CHỦ ĐỀ (Nếu an toàn):
+- PARAPHRASE chủ đề thành một Motion (câu khẳng định) chau chuốt, rõ ràng, có tính debatable cao.
+- Tạo phần tóm tắt và hướng dẫn cho vòng tranh luận.
+
+3. ĐỊNH DẠNG JSON OUTPUT:
 {
-  "refined_topic": "Motion đã cải thiện - câu khẳng định rõ ràng, cụ thể, có thể tranh luận",
-  "summary": "Tóm tắt ngắn gọn về chủ đề và tại sao nó có tính debatable (thực sự có thể tranh luận được)",
-  "guidance": "Hướng dẫn chi tiết cho cả hai bên trong vòng mở đầu"
+  "is_safe": boolean, 
+  "refusal_reason": "Lý do từ chối (nếu is_safe=false)",
+  "refined_topic": "Motion đã cải thiện",
+  "summary": "Tóm tắt ngắn gọn",
+  "guidance": "Hướng dẫn chi tiết"
 }
 
-LƯU Ý QUAN TRỌNG VỀ AN TOÀN:
-- Nếu chủ đề đầu vào là nội dung GÂY HẠI, THÙ GHÉT hoặc QUAN ĐIỂM CHÍNH TRỊ NHẠY CẢM: Hãy REWRITE (viết lại) thành một vấn đề xã hội, triết học hoặc kinh tế có thể tranh luận một cách văn minh, học thuật.
-- Mục tiêu là tạo ra "Debatable Motion" chứ không phải từ chối trả lời.
-
-VÍ DỤ về refined_topic tốt:
-- Input: "con chó không hơn con mèo" -> Output: "Chó là thú cưng phù hợp hơn mèo cho gia đình có trẻ nhỏ"
-- Input: "AI giáo dục" -> Output: "Trí tuệ nhân tạo sẽ thay thế hoàn toàn giáo viên trong giáo dục phổ thông trong vòng 10 năm tới"
-
-YÊU CẦU:
-- refined_topic: Phải là câu KHẲNG ĐỊNH (motion) rõ ràng, cụ thể, có phạm vi/thời gian nếu cần. KHÔNG chỉ copy nguyên input.
-- summary: Tóm tắt lại đề bài và nêu bật tính 'debatable' của chủ đề.
-- guidance: Hướng dẫn ngắn gọn như: 'Mỗi bên đưa ra tuyên bố ủng hộ/phản đối. Bên A nói trước...'.`
+LƯU Ý:
+- Nếu chủ đề chỉ là vấn đề xã hội gây tranh cãi (tử hình, nạo phá thai, LGBT...) nhưng được đặt ra để tranh luận văn minh, hãy REWRITE thành vấn đề học thuật thay vì từ chối.
+- Chỉ từ chối những nội dung thực sự ĐỘC HẠI, PHẠM PHÁP hoặc NHẠY CẢM CHÍNH TRỊ CAO.`
           },
           {
             role: "user",
@@ -81,6 +82,13 @@ YÊU CẦU:
       });
 
       const refinedData = JSON.parse(refinementResponse.choices[0].message.content || "{}");
+
+      // Check safety
+      if (refinedData.is_safe === false) {
+        return res.status(400).json({
+          message: refinedData.refusal_reason || "Chủ đề này không phù hợp để tranh luận vì lý do an toàn/nhạy cảm."
+        });
+      }
 
       // Xác định tên bên và hành động
       const userSideName = input.side === "support" ? "Khẳng định" : "Phủ định";
