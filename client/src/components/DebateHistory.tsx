@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { useDebates, useDeleteDebate } from "@/hooks/use-debates";
 import { Link } from "wouter";
-import { Trash2 } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp } from "lucide-react";
 
 export function DebateHistory() {
   const { data: debates, isLoading } = useDebates();
   const deleteDebate = useDeleteDebate();
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleDelete = (e: React.MouseEvent, debateId: number, topic: string) => {
     e.preventDefault(); // Prevent navigation
@@ -41,47 +43,68 @@ export function DebateHistory() {
     (a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime()
   );
 
+  const visibleDebates = isExpanded ? sortedDebates : sortedDebates.slice(0, 5);
+
   return (
     <div className="border-2 border-primary rounded-b-xl p-6 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm space-y-5">
-      {sortedDebates.map((debate) => (
-        <Link key={debate.id} href={`/debate/${debate.id}`}>
-          <div className="bg-primary/5 dark:bg-primary/10 p-5 rounded-xl border border-primary/10 flex items-center justify-between group hover:bg-primary/10 transition-colors cursor-pointer">
-            <div className="flex items-center gap-4 flex-1">
-              <div className="w-10 h-10 shrink-0 rounded-full bg-primary/20 flex items-center justify-center">
-                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      {visibleDebates.map((debate) => (
+        <div key={debate.id} className="block relative group">
+          <Link href={`/debate/${debate.id}`}>
+            <div className="bg-primary/5 dark:bg-primary/10 p-5 rounded-xl border border-primary/10 flex items-center justify-between hover:bg-primary/10 transition-colors cursor-pointer">
+              <div className="flex items-center gap-4 flex-1">
+                <div className="w-10 h-10 shrink-0 rounded-full bg-primary/20 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="text-sm md:text-base font-semibold text-slate-700 dark:text-slate-200 leading-tight pr-12 line-clamp-2">
+                  {debate.topic}
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-2 ml-4 shrink-0">
+                {/* Delete button */}
+                <button
+                  onClick={(e) => handleDelete(e, debate.id, debate.topic)}
+                  disabled={deleteDebate.isPending}
+                  className="w-9 h-9 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-red-500 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed z-10"
+                  title="Xóa cuộc tranh luận"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+
+                {/* Arrow icon */}
+                <svg
+                  className="w-5 h-5 text-primary/40 group-hover:text-primary transition-colors"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
-              <div className="text-sm md:text-base font-semibold text-slate-700 dark:text-slate-200 leading-tight">
-                {debate.topic}
-              </div>
             </div>
-
-            {/* Action buttons */}
-            <div className="flex items-center gap-2 ml-4 shrink-0">
-              {/* Delete button */}
-              <button
-                onClick={(e) => handleDelete(e, debate.id, debate.topic)}
-                disabled={deleteDebate.isPending}
-                className="w-9 h-9 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-red-500 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Xóa cuộc tranh luận"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-
-              {/* Arrow icon */}
-              <svg
-                className="w-5 h-5 text-primary/40 group-hover:text-primary transition-colors"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </div>
-        </Link>
+          </Link>
+        </div>
       ))}
+
+      {sortedDebates.length > 5 && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full py-3 text-primary font-bold uppercase tracking-wider text-sm hover:bg-primary/5 rounded-xl transition-colors flex items-center justify-center gap-2 mt-4"
+        >
+          {isExpanded ? (
+            <>
+              Thu gọn <ChevronUp className="w-4 h-4" />
+            </>
+          ) : (
+            <>
+              Xem thêm ({sortedDebates.length - 5}) <ChevronDown className="w-4 h-4" />
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 }
