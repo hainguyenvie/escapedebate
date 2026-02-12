@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from "react";
+import ReactMarkdown from "react-markdown";
 import { useRoute } from "wouter";
 import { useDebate, useSendMessage } from "@/hooks/use-debates";
 import { Header } from "@/components/Header";
@@ -261,10 +262,10 @@ export default function DebateSession() {
                           ĐIỀU PHỐI VIÊN - TÓM TẮT VÒNG {selectedRound}
                         </span>
                       </div>
-                      <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-l-4 border-amber-500 p-6 rounded-lg shadow-sm">
-                        <p className="text-slate-700 dark:text-slate-300 leading-relaxed font-medium whitespace-pre-line">
+                      <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-l-4 border-amber-500 p-6 rounded-lg shadow-sm prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                        <ReactMarkdown>
                           {msg.content}
-                        </p>
+                        </ReactMarkdown>
                       </div>
                     </div>
                   </motion.div>
@@ -300,12 +301,14 @@ export default function DebateSession() {
                     "bg-primary/5 dark:bg-primary/10 border border-primary/20 p-6 rounded-2xl max-w-2xl",
                     isUser ? "rounded-tr-none" : "rounded-tl-none"
                   )}>
-                    <p className={clsx(
-                      "text-slate-700 dark:text-slate-300 leading-relaxed font-medium whitespace-pre-line",
-                      isUser ? "text-right" : ""
+                    <div className={clsx(
+                      "prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed font-medium",
+                      isUser ? "text-right prose-p:text-right prose-headings:text-right" : ""
                     )}>
-                      {msg.content}
-                    </p>
+                      <ReactMarkdown>
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                 </motion.div>
               );
