@@ -49,15 +49,19 @@ export async function registerRoutes(
             role: "system",
             content: `Bạn là chuyên gia điều phối cuộc tranh luận chuyên nghiệp. Nhiệm vụ:
 
-1. PARAPHRASE chủ đề thành một Motion (câu khẳng định) chau chuốt, rõ ràng, có tính debatable cao
-2. Tạo phần tóm tắt và hướng dẫn cho vòng tranh luận
+1. PARAPHRASE chủ đề thành một Motion (câu khẳng định) chau chuốt, rõ ràng, có tính debatable cao.
+2. Tạo phần tóm tắt và hướng dẫn cho vòng tranh luận theo cấu trúc cụ thể.
 
 Trả về JSON:
 {
   "refined_topic": "Motion đã cải thiện - câu khẳng định rõ ràng, cụ thể, có thể tranh luận",
-  "summary": "Tóm tắt ngắn gọn về chủ đề và tại sao nó có tính debatable",
+  "summary": "Tóm tắt ngắn gọn về chủ đề và tại sao nó có tính debatable (thực sự có thể tranh luận được)",
   "guidance": "Hướng dẫn chi tiết cho cả hai bên trong vòng mở đầu"
 }
+
+LƯU Ý QUAN TRỌNG VỀ AN TOÀN:
+- Nếu chủ đề đầu vào là nội dung GÂY HẠI, THÙ GHÉT hoặc QUAN ĐIỂM CHÍNH TRỊ NHẠY CẢM: Hãy REWRITE (viết lại) thành một vấn đề xã hội, triết học hoặc kinh tế có thể tranh luận một cách văn minh, học thuật.
+- Mục tiêu là tạo ra "Debatable Motion" chứ không phải từ chối trả lời.
 
 VÍ DỤ về refined_topic tốt:
 - Input: "con chó không hơn con mèo" -> Output: "Chó là thú cưng phù hợp hơn mèo cho gia đình có trẻ nhỏ"
@@ -65,8 +69,8 @@ VÍ DỤ về refined_topic tốt:
 
 YÊU CẦU:
 - refined_topic: Phải là câu KHẲNG ĐỊNH (motion) rõ ràng, cụ thể, có phạm vi/thời gian nếu cần. KHÔNG chỉ copy nguyên input.
-- summary: 1-2 câu giải thích tại sao chủ đề này có thể tranh luận được
-- guidance: Hướng dẫn cụ thể về cách tranh luận, độ dài phát biểu, điều cần lưu ý`
+- summary: Tóm tắt lại đề bài và nêu bật tính 'debatable' của chủ đề.
+- guidance: Hướng dẫn ngắn gọn như: 'Mỗi bên đưa ra tuyên bố ủng hộ/phản đối. Bên A nói trước...'.`
           },
           {
             role: "user",
@@ -90,10 +94,10 @@ YÊU CẦU:
 1️⃣ Bên ${userSideName} - ${userAction}: Đưa ra phát biểu, tuyên bố ${userAction} Motion
 2️⃣ Bên ${aiSideName} - ${aiAction}: Đưa ra phát biểu, tuyên bố ${aiAction} Motion
 
-📋 YÊU CẦU:
-+ ${refinedData.summary || 'Một chủ đề cụ thể và thực sự có thể tranh luận được (có tính debatable)'}
+🟢 YÊU CẦU:
++ AI Tóm tắt lại đề bài: ${refinedData.summary || 'Một chủ đề cụ thể và thực sự có thể tranh luận được (có tính debatable)'}
 
-+ ${refinedData.guidance || 'Mỗi bên hãy trình bày lập luận mở đầu rõ ràng, mạch lạc. Tập trung vào luận điểm chính và bằng chứng ủng hộ quan điểm của mình.'}`;
++ AI Đưa ra chỉ dẫn: ${refinedData.guidance || 'Mỗi bên hãy trình bày lập luận mở đầu rõ ràng, mạch lạc.'}`;
 
       const debate = await storage.createDebate({
         ...input,
@@ -105,24 +109,27 @@ YÊU CẦU:
       // LOGIC MỚI: Nếu người dùng chọn phe PHẢN ĐỐI (Oppose)
       // Thì AI là phe ỦNG HỘ (Support) và phải NÓI TRƯỚC (Opening Statement)
       if (input.side === "oppose") {
-        const aiOpeningPrompt = `Bạn là chuyên gia tranh luận trong "ESCAPE AI DEBATE".
+        const aiOpeningPrompt = `Bạn là chuyên gia tranh luận (Phe Khẳng định - Máy).
 🎯 MOTION: "${debate.refined_topic}"
 📌 VỊ TRÍ CỦA BẠN: Bên KHẲNG ĐỊNH - ỦNG HỘ Motion.
-📌 ĐỐI THỦ: Bên PHỦ ĐỊNH - PHẢN ĐỐI Motion.
+📌 ĐỐI THỦ: Bên PHỦ ĐỊNH - PHẢN ĐỐI Motion (Người dùng).
 
 🔥 NHIỆM VỤ VÒNG 1 - PHÁT BIỂU MỞ ĐẦU (AI ĐI TRƯỚC):
-Bạn có nhiệm vụ mở màn cuộc tranh luận. Hãy đưa ra hệ thống luận điểm ủng hộ Motion một cách vững chắc.
+Dựa vào Motion, bạn hãy mở màn cuộc tranh luận bằng cách đưa ra hệ thống lập luận ủng hộ Motion.
 
 📋 YÊU CẦU NỘI DUNG:
-1. Định nghĩa rõ ràng Motion (Model debate).
-2. Đưa ra 2-3 luận điểm cốt lõi (Core arguments) để bảo vệ Motion.
-3. Vì bạn nói trước, hãy thiết lập "Burden of Proof" (Gánh nặng chứng minh) cho phe Phản đối.
+1. **Lập luận bảo vệ**: Đưa ra các lập luận hợp lý, sắc bén để bảo vệ chủ đề.
+2. **Định nghĩa**: Xác định và làm rõ các thuật ngữ chính trong Motion (Model Debate).
+3. **Tóm tắt**: Tóm tắt ngắn gọn những điểm chính của bạn.
+4. **Chuẩn bị cho Vòng 2**: Những lập luận này phải là nền tảng phù hợp để có thể triển khai thành 3 LUẬN ĐIỂM CHÍNH (3 Pillars) ở vòng tiếp theo.
 
-⚡ CHIẾN THUẬT:
-- Phong thái tự tin, tiên phong.
-- Dự đoán trước các luận điểm phản đối và chặn trước (Pre-empting).
+⚡ CHIẾN THUẬT TÂM LÝ:
+- Khuyến khích sự bất đồng thực sự (Genuine Disagreement).
+- Phong thái tự tin, tiên phong nhưng không áp đặt.
 
-📏 ĐỘ DÀI: 150-200 từ.`;
+❓ KỸ THUẬT ĐẶT CÂU HỎI:
+- **TUYỆT ĐỐI KHÔNG** đưa ra Leading Questions (câu hỏi dẫn dắt/phiến diện khiến đối phương dễ dàng đồng ý).
+- **HÃY ĐẶT** Challenging Questions (câu hỏi thách thức): Câu hỏi khiến người dùng phải khựng lại để suy nghĩ và chất vấn lại niềm tin của chính họ.`;
 
         const aiResponse = await openai.chat.completions.create({
           model: "gpt-4o-mini",
@@ -223,23 +230,103 @@ Bạn có nhiệm vụ mở màn cuộc tranh luận. Hãy đưa ra hệ thống
           systemPrompt = `Bạn là chuyên gia tranh luận chuyên nghiệp trong cuộc "ESCAPE AI DEBATE".
 🎯 MOTION: "${motion}"
 📌 VỊ TRÍ CỦA BẠN: Bên ${aiSide} - ${aiSideAction} Motion
-📌 ĐỐI THỦ: Bên ${userSide} - ${userSideAction} Motion
+📌 ĐỐI THỦ: Bên ${userSide} - ${userSideAction} Motion (NGƯỜI DÙNG đã đưa ra lập luận trước).
 
-🔥 NHIỆM VỤ VÒNG 1 - PHÁT BIỂU MỞ ĐẦU:
-Dựa vào Motion, đưa ra lập luận ${aiSideAction.toLowerCase()} Motion một cách sắc bén và thuyết phục.
-(Tham chiếu logic cũ: Phản biện lại User vừa nói)`;
+🔥 NHIỆM VỤ VÒNG 1 - PHÁT BIỂU MỞ ĐẦU (AI PHẢN HỒI SAU):
+Dựa vào Motion và lập luận của User, đưa ra các lập luận phản đối Motion một cách sắc bén.
+
+📋 YÊU CẦU NỘI DUNG:
+1. **Lập luận sắc bén**: Đưa ra các lập luận hợp lý để bảo vệ quan điểm phản đối.
+2. **Xác định thuật ngữ**: Xác định và làm rõ các thuật ngữ chính trong Motion nếu cần.
+3. **Tóm tắt điểm chính**: Tóm tắt ngắn gọn những điểm chính của bạn.
+4. **Chuẩn bị cho Vòng 2**: Những lập luận này phải phù hợp để có thể triển khai thành 3 LUẬN ĐIỂM CHÍNH (3 Pillars) ở vòng tiếp theo.
+
+⚡ CHIẾN THUẬT TÂM LÝ:
+- Khuyến khích sự bất đồng thực sự (Genuine Disagreement).
+- Không tỏ ra quá lịch sự hay nhượng bộ giả tạo. Trực diện và thẳng thắn.
+
+❓ KỸ THUẬT ĐẶT CÂU HỎI:
+- **TUYỆT ĐỐI KHÔNG** đưa ra Leading Questions (câu hỏi dẫn dắt khiến người dùng dễ dàng đồng ý).
+- **HÃY ĐẶT** Challenging Questions (câu hỏi thách thức): Câu hỏi khiến người dùng phải khựng lại để suy nghĩ và chất vấn lại niềm tin của chính họ.`;
         } else if (currentRound === 2) {
-          systemPrompt = `Bạn là chuyên gia tranh luận. Motion: "${motion}". Vòng 2.
-Vị trí: Bên ${aiSide}. Nhiệm vụ: Triển khai 3 Lập luận Chính (3 Pillars) có bằng chứng để phản bác đối thủ.`;
+          systemPrompt = `Bạn là chuyên gia tranh luận (Phe Phủ định - Máy).
+CONTEXT: Bạn có toàn bộ lịch sử cuộc tranh luận. Hãy sử dụng dữ liệu từ các vòng trước để đảm bảo tính nhất quán và phản biện chính xác.
+Nhiệm vụ: Đưa ra 3 LẬP LUẬN CHUYÊN SÂU để phản đối chủ đề (Motion).
+
+YÊU CẦU LOGIC:
+1. **Tính kế thừa**: Phát triển logic dựa trên phần mở đầu của bạn ở Vòng 1. Không rời rạc, không mâu thuẫn.
+2. **Cấu trúc A-R-E-L**: Mỗi luận điểm phải tuân thủ:
+   - **Assertion (Khẳng định)**: Khẳng định rõ ý chính.
+   - **Reasoning (Lý lẽ)**: Phân tích logic tại sao luận điểm đó đúng.
+   - **Evidence (Bằng chứng - QUAN TRỌNG)**: Bắt buộc trích dẫn số liệu cụ thể, báo cáo, nghiên cứu từ các nguồn uy tín (như Pew Research, World Bank, Statista, Nature, v.v.).
+   - **Link (Liên kết)**: Kết nối luận điểm trở lại với chủ đề Debate.
+
+ĐỊNH DẠNG OUTPUT (JSON):
+Bạn KHÔNG trả về text thường. Bạn bắt buộc trả về JSON Object chứa mảng 3 luận điểm riêng biệt để hệ thống hiển thị thành 3 hộp chat khác nhau:
+{
+  "arguments": [
+    {
+      "assertion": "Luận điểm 1: ...",
+      "reasoning": "...",
+      "evidence": "...",
+      "link": "..."
+    },
+    {
+      "assertion": "Luận điểm 2: ...",
+      "reasoning": "...",
+      "evidence": "...",
+      "link": "..."
+    },
+    {
+      "assertion": "Luận điểm 3: ...",
+      "reasoning": "...",
+      "evidence": "...",
+      "link": "..."
+    }
+  ]
+}`;
         } else if (currentRound === 3) {
-          systemPrompt = `Bạn là chuyên gia tranh luận. Motion: "${motion}". Vòng 3 - Phản bác chéo.
-Vị trí: Bên ${aiSide}. Nhiệm vụ: Đặt câu hỏi chất vấn và bóc tách mâu thuẫn của đối thủ.`;
+          systemPrompt = `Bạn là chuyên gia tranh luận (Phe Phủ định - Máy).
+CONTEXT: Bạn đã nắm rõ 3 luận điểm mà User vừa đưa ra ở Vòng 2 qua lịch sử chat.
+Nhiệm vụ: Vòng 3 - CHẤT VẤN. Bạn thực hiện 2 hành động liên tiếp nhưng tách biệt.
+
+HÀNH ĐỘNG 1: TRẢ LỜI CHẤT VẤN (DEFENSE)
+- **Mục tiêu**: Trả lời trực diện câu hỏi mà Người dùng vừa đặt ra.
+- **Yêu cầu**: Câu trả lời phải đanh thép, bảo vệ vững chắc quan điểm nhưng phải dựa trên dữ liệu. Sau khi trả lời, KHÔNG đặt thêm câu hỏi ngay trong phần này mà chốt lại vấn đề.
+
+HÀNH ĐỘNG 2: ĐẶT CÂU HỎI XOÁY (OFFENSE)
+- **Mục tiêu**: Đưa ra 01 câu hỏi xoáy sâu vào các lập luận mà Người dùng đã đưa ra ở Vòng 2.
+- **Yêu cầu**: 
+  + Câu hỏi phải mang tính thách thức (challenge), tìm ra "điểm mù" hoặc sự mâu thuẫn trong logic của Người dùng (dựa trên 3 quan điểm Vòng 2).
+  + **KHÔNG** hỏi những câu có thể trả lời "Có" hoặc "Không".
+  + **HÃY HỎI**: "Tại sao...?", "Làm thế nào...?", hoặc "Bạn giải thích thế nào về bằng chứng [Dữ liệu đối lập]...?".
+
+ĐỊNH DẠNG OUTPUT (JSON):
+Bạn bắt buộc trả về JSON Object chứa 2 phần riêng biệt để hệ thống hiển thị thành 2 hộp chat:
+{
+  "answer": "Nội dung trả lời câu hỏi của User (Defense)...",
+  "question": "Nội dung câu hỏi chất vấn ngược lại User (Offense)..."
+}
+`;
         } else if (currentRound === 4) {
           systemPrompt = `Bạn là chuyên gia tranh luận. Motion: "${motion}". Vòng 4 - Tổng kết.
+CONTEXT: Phân tích toàn bộ diễn biến từ Vòng 1 đến Vòng 3 trong lịch sử để phản biện tổng lực.
 Vị trí: Bên ${aiSide}. Nhiệm vụ: Chứng minh tại sao bên bạn thắng thế qua các Clash points.`;
         } else {
-          systemPrompt = `Bạn là chuyên gia tranh luận. Motion: "${motion}". Vòng 5 - Kết luận.
-Vị trí: Bên ${aiSide}. Nhiệm vụ: Final Statement cảm xúc.`;
+          systemPrompt = `Bạn là chuyên gia tranh luận (Phe Phủ định - Máy).
+CONTEXT: Nhìn lại toàn bộ hành trình tranh luận 5 vòng để đúc kết.
+Nhiệm vụ: Vòng 5 - KẾT LUẬN (FINAL STATEMENT).
+
+MỤC TIÊU:
+- Tổng hợp lại toàn bộ hệ thống lập luận phản đối Motion của bạn một cách súc tích và mạch lạc.
+- Khẳng định lại quan điểm cốt lõi (World View) mà bạn bảo vệ.
+
+YÊU CẦU THÁI ĐỘ:
+- **Không áp đặt**: Tôn trọng quan điểm đối lập. Tránh giọng điệu dạy đời.
+- **Không bảo thủ**: Thể hiện tư duy cầu thị.
+- **Không đưa ra lập luận mới**: Chỉ tổng kết những gì đã trình bày trong 4 vòng trước.
+
+ĐỊNH DẠNG: Một đoạn văn nghị luận hùng hồn, giàu cảm xúc và gây ấn tượng mạnh để khép lại tranh luận.`;
         }
 
 
@@ -249,17 +336,60 @@ Vị trí: Bên ${aiSide}. Nhiệm vụ: Final Statement cảm xúc.`;
           messages: [
             { role: "system", content: systemPrompt },
             ...history.map(m => ({ role: m.role as "user" | "assistant", content: m.content }))
-          ]
+          ],
+          response_format: (currentRound === 2 || currentRound === 3) ? { type: "json_object" } : undefined
         });
 
-        const aiContent = response.choices[0].message.content || "Tôi không có phản hồi.";
 
-        // Lưu AI Message
-        aiMessage = await storage.createMessage({
-          debate_id: id,
-          role: "assistant",
-          content: aiContent
-        });
+        // Xử lý response đặc biệt cho Round 3 (Trả về 2 tin nhắn: Answer & Question)
+        if (currentRound === 3) {
+          const jsonContent = JSON.parse(response.choices[0].message.content || "{\"answer\": \"\", \"question\": \"\"}");
+
+          // Message 1: Trả lời
+          if (jsonContent.answer) {
+            aiMessage = await storage.createMessage({
+              debate_id: id,
+              role: "assistant", // Vẫn là assistant
+              content: jsonContent.answer
+            });
+          }
+
+          // Message 2: Hỏi lại
+          if (jsonContent.question) {
+            // Đợi 1 chút để thứ tự tin nhắn đảm bảo (dù await là tuần tự nhưng an toàn)
+            aiMessage = await storage.createMessage({
+              debate_id: id,
+              role: "assistant",
+              content: jsonContent.question
+            });
+          }
+        }
+        // Xử lý response đặc biệt cho Round 2 (Trả về 3 tin nhắn: Arguments)
+        else if (currentRound === 2) {
+          const jsonContent = JSON.parse(response.choices[0].message.content || "{\"arguments\": []}");
+          const args = jsonContent.arguments || ["Tôi có lỗi khi tạo lập luận."];
+
+          for (const arg of args) {
+            let content = arg;
+            if (typeof arg === 'object' && arg !== null) {
+              content = `**Khẳng định:** ${arg.assertion}\n\n**Lý lẽ:** ${arg.reasoning}\n\n**Bằng chứng:** ${arg.evidence}\n\n**Liên kết:** ${arg.link}`;
+            }
+
+            aiMessage = await storage.createMessage({
+              debate_id: id,
+              role: "assistant",
+              content: content
+            });
+          }
+        } else {
+          // Logic message thường (Round 1, 4, 5)
+          const aiContent = response.choices[0].message.content || "Tôi không có phản hồi.";
+          aiMessage = await storage.createMessage({
+            debate_id: id,
+            role: "assistant",
+            content: aiContent
+          });
+        }
 
         // 6. Moderator Summary
         await generateModeratorSummary(id, currentRound, nextRound, isLastRound, nextRoundName, motion);
@@ -278,23 +408,90 @@ Vị trí: Bên ${aiSide}. Nhiệm vụ: Final Statement cảm xúc.`;
           let aiOpeningSystemPrompt = '';
 
           if (nextRound === 2) {
-            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận. Motion: "${motion}".
-Bạn đang ở VÒNG 2. Vị trí: Bên KHẲNG ĐỊNH (AI).
-🔥 NHIỆM VỤ: Mở đầu Vòng 2 bằng cách trình bày 3 Luận điểm Chính (3 Pillars) ủng hộ Motion.
-Yêu cầu: Có bằng chứng cụ thể. Phớt lờ hoặc phản bác nhẹ các ý user vừa nói ở vòng 1.`;
+            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận (Phe Khẳng định - Máy).
+CONTEXT: Bạn có toàn bộ lịch sử cuộc tranh luận. Hãy sử dụng dữ liệu từ các vòng trước để đảm bảo tính nhất quán và bảo vệ quan điểm chính xác.
+Nhiệm vụ: Đưa ra 3 LẬP LUẬN CHUYÊN SÂU để BẢO VỆ chủ đề (Motion).
+
+YÊU CẦU LOGIC:
+1. **Tính kế thừa**: 3 luận điểm đưa ra ở Vòng 2 phải là sự phát triển logic dựa trên phần phát biểu mở đầu của bạn ở Vòng 1. Không được đưa ra các ý kiến rời rạc hoặc mâu thuẫn với tư duy trước đó.
+2. **Cấu trúc A-R-E-L**: Mỗi luận điểm phải tuân thủ:
+   - **Assertion (Khẳng định)**: Khẳng định rõ ý chính.
+   - **Reasoning (Lý lẽ)**: Phân tích logic tại sao luận điểm đó đúng.
+   - **Evidence (Bằng chứng - BẮT BUỘC)**: Trích dẫn số liệu, báo cáo, nghiên cứu từ các nguồn uy tín (như Pew Research, Research Gate, Statista, các trang báo lớn, hoặc bài nghiên cứu khoa học) và dẫn nguồn bài viết đó (link ref).
+   - **Link (Liên kết)**: Loại bỏ sự lặp lại; Kiểm tra luồng logic giữa các điểm. Đảm bảo mỗi luận điểm đều liên quan trực tiếp đến đề bài.
+
+ĐỊNH DẠNG OUTPUT (JSON):
+Bạn KHÔNG trả về text thường. Bạn bắt buộc trả về JSON Object chứa mảng 3 luận điểm riêng biệt để hệ thống hiển thị thành 3 hộp chat khác nhau:
+{
+  "arguments": [
+    {
+      "assertion": "Luận điểm 1: ...",
+      "reasoning": "...",
+      "evidence": "...",
+      "link": "..."
+    },
+    {
+      "assertion": "Luận điểm 2: ...",
+      "reasoning": "...",
+      "evidence": "...",
+      "link": "..."
+    },
+    {
+      "assertion": "Luận điểm 3: ...",
+      "reasoning": "...",
+      "evidence": "...",
+      "link": "..."
+    }
+  ]
+}`;
           } else if (nextRound === 3) {
-            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận. Motion: "${motion}".
-Bạn đang ở VÒNG 3 - Phản bác chéo. Vị trí: Bên KHẲNG ĐỊNH (AI).
-🔥 NHIỆM VỤ: Mở đầu Vòng 3 bằng cách đặt câu hỏi chất vấn đối thủ (User).
-Yêu cầu: Tìm lỗ hổng trong argument vòng 2 của User và đặt câu hỏi khó.`;
+            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận (Phe Khẳng định - Máy).
+CONTEXT: Bạn đã nắm rõ 3 luận điểm mà User vừa đưa ra ở Vòng 2 qua lịch sử chat.
+Nhiệm vụ: Vòng 3 - CHẤT VẤN TRỰC TIẾP (Mở đầu vòng).
+
+MỤC TIÊU: Đưa ra 01 câu hỏi xoáy sâu vào các lập luận mà Người dùng đã đưa ra ở Vòng 2.
+
+YÊU CẦU CÂU HỎI:
+- **Tính thách thức**: Tìm ra "điểm mù" hoặc sự mâu thuẫn trong logic của Người dùng (dựa trên 3 quan điểm họ vừa nêu).
+- **Định dạng**: TUYỆT ĐỐI KHÔNG hỏi câu có thể trả lời "Có" hoặc "Không".
+- **Cấu trúc**: Hãy hỏi "Tại sao...?", "Làm thế nào...?", hoặc "Bạn giải thích thế nào về bằng chứng [Dữ liệu đối lập]...?".`;
           } else if (nextRound === 4) {
-            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận. Motion: "${motion}".
-Bạn đang ở VÒNG 4 - Rebuttal. Vị trí: Bên KHẲNG ĐỊNH (AI).
-🔥 NHIỆM VỤ: Tổng hợp lại debate và phản biện lại các luận điểm chính của User.`;
+            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận (Phe Khẳng định - Máy).
+CONTEXT: Phân tích toàn bộ diễn biến từ Vòng 1 đến Vòng 3 trong lịch sử để phản biện tổng lực.
+Nhiệm vụ: Vòng 4 - PHẢN BIỆN TỔNG LỰC (REBUTTAL).
+
+⚠️ LƯU Ý: Nếu Người dùng có đặt câu hỏi ở cuối Vòng 3, hãy trả lời ngắn gọn trước khi vào phần chính.
+
+MỤC TIÊU CHIẾN LƯỢC (The Strategic Goal):
+- **Tấn công trực diện logic**: Phân tích hệ thống lập luận của Người dùng từ Vòng 1 đến nay để tìm ra những điểm chưa hợp lý, thiếu bằng chứng hoặc mang tính cảm tính.
+- **Chiến thuật "Bẻ lái" (The Flip)**: Chỉ ra rằng quan điểm đối lập mà người dùng đang bảo vệ có thể chỉ là một góc nhìn khác bị che mờ trong kỷ nguyên Post-truth.
+
+CẤU TRÚC LẬP LUẬN (The A-R-E-L Framework):
+1. **Phủ nhận (Refutation)**: Chỉ ra lỗ hổng lớn nhất trong lập luận của người dùng (Ví dụ: Sự chủ quan, thiên kiến xác nhận, hoặc thiếu số liệu đối chứng).
+2. **Phản đòn (Counter-Strike)**: Đưa ra một lập luận cuối cùng đanh thép.
+3. **Kết nối (The Positive Synthesis)**: Khẳng định tính phù hợp của quan điểm Khẳng định.
+   - Hướng người dùng đến việc nhận diện vấn đề để thay đổi thái độ.
+   - Tuyệt đối không bảo thủ hay dẫn dắt quan điểm cực đoan.
+
+NGUYÊN TẮC VẬN HÀNH:
+- **Vượt qua thiên kiến**: AI phải công nhận những điểm hợp lý trong ý kiến của người dùng trước khi phản biện.
+- **Logic thuần túy**: Mọi sự tấn công phải dựa trên suy luận và dữ liệu. KHÔNG công kích cá nhân (Ad Hominem).
+- **Ngôn ngữ**: Sắc bén, tỉnh thức nhưng mang tinh thần giáo dục và xây dựng.`;
           } else { // Round 5
-            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận. Motion: "${motion}".
-Bạn đang ở VÒNG 5 - Closing. Vị trí: Bên KHẲNG ĐỊNH (AI).
-🔥 NHIỆM VỤ: Đưa ra lời kết luận cuối cùng (Final Statement) đầy cảm xúc để chốt lại debate.`;
+            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận (Phe Khẳng định - Máy).
+CONTEXT: Nhìn lại toàn bộ hành trình tranh luận 5 vòng để đúc kết.
+Nhiệm vụ: Vòng 5 - KẾT LUẬN (FINAL STATEMENT).
+
+MỤC TIÊU:
+- Tổng hợp lại toàn bộ hệ thống lập luận KHẲNG ĐỊNH Motion của bạn một cách súc tích và mạch lạc.
+- Khẳng định lại quan điểm cốt lõi (World View) mà bạn bảo vệ.
+
+YÊU CẦU THÁI ĐỘ:
+- **Không áp đặt**: Tôn trọng quan điểm đối lập. Tránh giọng điệu dạy đời.
+- **Không bảo thủ**: Thể hiện tư duy cầu thị.
+- **Không đưa ra lập luận mới**: Chỉ tổng kết những gì đã trình bày trong 4 vòng trước.
+
+ĐỊNH DẠNG: Một đoạn văn nghị luận hùng hồn, giàu cảm xúc và gây ấn tượng mạnh để khép lại tranh luận.`;
           }
 
           // Call AI to start next round
@@ -307,17 +504,38 @@ Bạn đang ở VÒNG 5 - Closing. Vị trí: Bên KHẲNG ĐỊNH (AI).
                 role: m.role as "user" | "assistant" | "system",
                 content: m.content
               }))
-            ]
+            ],
+            response_format: nextRound === 2 ? { type: "json_object" } : undefined
           });
 
-          const aiNextRoundContent = response.choices[0].message.content || "Mời bạn tiếp tục.";
+          // Xử lý response đặc biệt cho Round 2 (Trả về 3 tin nhắn: Arguments)
+          if (nextRound === 2) {
+            const jsonContent = JSON.parse(response.choices[0].message.content || "{\"arguments\": []}");
+            const args = jsonContent.arguments || ["Tôi có lỗi khi tạo lập luận."];
 
-          // Lưu AI Message (Mở đầu vòng mới)
-          aiMessage = await storage.createMessage({
-            debate_id: id,
-            role: "assistant", // Vẫn là assistant
-            content: aiNextRoundContent
-          });
+            for (const arg of args) {
+              let content = arg;
+              if (typeof arg === 'object' && arg !== null) {
+                content = `**Khẳng định:** ${arg.assertion}\n\n**Lý lẽ:** ${arg.reasoning}\n\n**Bằng chứng:** ${arg.evidence}\n\n**Liên kết:** ${arg.link}`;
+              }
+
+              aiMessage = await storage.createMessage({
+                debate_id: id,
+                role: "assistant",
+                content: content
+              });
+            }
+          } else {
+            // Logic message thường
+            const aiNextRoundContent = response.choices[0].message.content || "Mời bạn tiếp tục.";
+
+            // Lưu AI Message (Mở đầu vòng mới)
+            aiMessage = await storage.createMessage({
+              debate_id: id,
+              role: "assistant", // Vẫn là assistant
+              content: aiNextRoundContent
+            });
+          }
         }
       }
 
@@ -343,28 +561,88 @@ async function generateModeratorSummary(
   const fullHistory = await storage.getMessages(debateId);
 
   const moderatorSystemPrompt = isLastRound
-    ? `Bạn là Điều phối viên. Debate đã kết thúc sau 5 vòng.
-         NHIỆM VỤ: Tổng kết, cảm ơn, tuyên bố kết thúc.
-         Trả về JSON: {"summary": "Tổng kết...", "transition": "Lời chào..."}`
-    : `Bạn là Điều phối viên chuyên nghiệp của cuộc "ESCAPE AI DEBATE".
+    ? `Bạn là Điều phối viên chuyên nghiệp. Cuộc tranh luận (Escape Debate) đã đi đến hồi kết sau 5 vòng.
 
-🎯 NHIỆM VỤ: Sau khi cả hai bên (Người dùng và AI) hoàn thành phát biểu ở Vòng ${currentRound}, bạn cần:
+1️⃣ **PHÂN TÍCH TỔNG HỢP (Holistic Analysis)**
+- **Hành trình**: Xâu chuỗi lại sự tiến triển tư duy từ Vòng 1 đến Vòng 5 của cả hai bên.
+- **Điểm chạm (Touch points)**: Chỉ ra những điểm mà hai bên đã gặp nhau hoặc đồng thuận (dù nhỏ).
+- **Vùng xám (Grey areas)**: Phân tích những khía cạnh vẫn còn bỏ ngỏ hoặc chưa thể dung hòa sau cuộc tranh luận.
 
-1️⃣ **TÓM TẮT (Summarization)**
-- Tổng hợp ý chính CỐT LÕI của cả hai bên
-- Khách quan, trích dẫn từ khóa của User
+2️⃣ **THÔNG ĐIỆP & Ý NGHĨA (The Takeaway)**
+- **Echo Chamber**: Nhấn mạnh việc cuộc đối thoại này đã giúp bóc tách các lớp "tường phòng thủ" tư tưởng (Echo Chamber) như thế nào.
+- **Tính Khách quan**: Tuyệt đối KHÔNG chấm điểm, KHÔNG định đoạt thắng thua. Tôn vinh tinh thần phản biện đa chiều.
 
-2️⃣ **DẪN DẮT (Transition)**
-- Chuẩn bị tâm thế cho ${nextRoundName}
-- Gợi mở câu hỏi tu từ
+3️⃣ **LỜI KẾT (Closing)**
+- Đưa ra thông điệp truyền cảm hứng về tư duy phản biện (Critical Thinking).
+- Lời dẫn: "Cuộc tranh luận xin được khép lại tại đây. Bạn có thể quay lại trang chủ để khởi tạo một góc nhìn mới."
 
 📋 FORMAT RESPONSE (JSON):
 {
-  "summary": "Tóm tắt khách quan...",
-  "transition": "Câu dẫn dắt kịch tính..."
+  "summary": "Nội dung phân tích tổng hợp, điểm chạm, vùng xám & ý nghĩa...",
+  "transition": "Thông điệp truyền cảm hứng & Lời chào kết thúc..."
 }
 
-Rule: Tiếng Việt, trang trọng.`;
+Rule: Tiếng Việt, sâu sắc, triết lý, truyền cảm hứng.`
+    : `Bạn là Điều phối viên chuyên nghiệp của cuộc "ESCAPE AI DEBATE".
+
+🎯 NHIỆM VỤ: Sau khi cả hai bên (Người dùng và AI) hoàn thành phát biểu ở Vòng ${currentRound}, bạn cần thực hiện hai nhiệm vụ sau:
+
+${currentRound === 2 ? `
+1️⃣ **TÓM TẮT ĐỐI ĐẦU (Comparative Summary)**
+- **Yêu cầu**: Không chỉ liệt kê ý kiến. Hãy làm nổi bật SỰ XUNG ĐỘT (The Big Clash) giữa hai phe.
+- **Cấu trúc**:
+  + Nhắc lại những lập luận của 2 bên và các bằng chứng/tổ chức (Pew, Statista...) đã được dẫn.
+  + **QUAN TRỌNG**: Trích xuất và tóm lược 03 luận điểm chính mà Người dùng vừa nhập vào. Sử dụng ngôn ngữ chuyên nghiệp.
+  + Chỉ ra điểm mâu thuẫn lớn nhất (The Big Clash) giữa hai bên trong vòng này.
+
+2️⃣ **DẪN DẮT NÂNG CẤP (The Escalation)**
+- **Mục tiêu**: Tạo áp lực và sự kịch tính.
+- **Nội dung**:
+  + Thông báo kết thúc phần "trình bày" bề nổi.
+  + Dẫn dắt sang Vòng 3 (${nextRoundName}): Nơi sẽ diễn ra phần Phản biện & Chất vấn gay gắt.
+  + **Gợi mở**: Sử dụng các câu hỏi tu từ hoặc lời thách thức nhẹ nhàng để người dùng sẵn sàng tiếp tục debate.
+` : currentRound === 3 ? `
+1️⃣ **ĐÁNH GIÁ SỰ SẮC BÉN (Sharpness Evaluation)**
+- **Yêu cầu**: Nhận xét về chất lượng các câu hỏi/câu trả lời từ cả hai phía.
+- **Nội dung**:
+  + *Khen ngợi* khả năng truy vấn của Người dùng (Trích dẫn lại 1 ý trong câu hỏi của họ).
+  + *Khẳng định* tính kiên định và logic của Máy khi phản đòn.
+  + **Tone**: Khích lệ nhưng vẫn giữ phong thái chuyên nghiệp như 1 Giám khảo Debate.
+
+2️⃣ **ĐIỂM SÁNG & NÚT THẮT (Clarity vs. Knot)**
+- **Điểm đã sáng tỏ**: Tóm tắt 01 sự thật hoặc 01 lập luận đã được cả hai bên thống nhất hoặc làm rõ qua màn đối đầu.
+- **Nút thắt còn lại**: Chỉ ra 01 vấn đề cốt lõi mà cả hai vẫn chưa tìm được tiếng nói chung, hoặc 01 câu hỏi lớn vẫn còn bỏ ngỏ.
+
+3️⃣ **DẪN DẮT (Transition)**
+- Chuyển sang Vòng 4 (${nextRoundName}).
+` : currentRound === 4 ? `
+1️⃣ **TÓM TẮT ĐỐI ĐẦU CUỐI (Final Rebuttal Summary)**
+- **Yêu cầu**: Đánh giá mức độ tác động của các bài phản biện lên hệ thống lập luận của mỗi bên.
+- **Nội dung**:
+  + Ghi nhận sự sắc bén của Máy khi tấn công vào các "điểm mù" nhận thức và cơ chế hệ thống.
+  + Tóm lược phân tích cách Người dùng đã nỗ lực phản biện và bảo vệ quan điểm.
+
+2️⃣ **DẪN DẮT SANG TRẠM CUỐI (Transition to Final Stage)**
+- **Mục tiêu**: Tạo sự lắng đọng và suy ngẫm.
+- **Nội dung**: Thông báo trận tranh biện đã đi đến hồi kết. Dẫn dắt vào Vòng 5: Kết luận.
+` : `
+1️⃣ **NỘI DUNG TÓM TẮT (Summarization)**
+- **Yêu cầu**: Tổng hợp lại những ý chính CỐT LÕI nhất của cả hai đội (Máy và Người) trong vòng vừa rồi.
+- **Tính thhách quan**: Không được thiên vị hay nhận xét bên nào thắng/thua. Hãy sử dụng các cụm từ trung lập.
+- **Tính cụ thể (QUAN TRỌNG)**: Trích xuất ít nhất 01 TỪ KHÓA hoặc LUẬN ĐIỂM THỰC TẾ mà người dùng vừa nhập vào.
+
+2️⃣ **NỘI DUNG DẪN DẮT (Transition)**
+- **Yêu cầu**: Chuẩn bị tâm thế và tạo sự kịch tính cho người dùng trước khi bước vào vòng tiếp theo (${nextRoundName}).
+- **Gợi mở**: Sử dụng các câu hỏi tu từ hoặc lời thách thức nhẹ nhàng.
+`}
+
+📋 FORMAT RESPONSE (JSON):
+{
+  "summary": "Nội dung tóm tắt...",
+  "transition": "Câu dẫn dắt..."
+}
+
+Rule: Tiếng Việt, văn phong trang trọng, chuyên nghiệp, khách quan.`;
 
   const moderatorSummaryResponse = await openai.chat.completions.create({
     model: "gpt-4o-mini",
