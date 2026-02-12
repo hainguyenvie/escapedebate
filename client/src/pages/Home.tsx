@@ -6,6 +6,15 @@ import { Footer } from "@/components/Footer";
 import { DebateHistory } from "@/components/DebateHistory";
 import { useToast } from "@/hooks/use-toast";
 import clsx from "clsx";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Home() {
   const [topic, setTopic] = useState("");
@@ -13,6 +22,10 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const createDebate = useCreateDebate();
   const { toast } = useToast();
+
+  // State for error handling
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleStart = async () => {
     if (!topic.trim()) {
@@ -27,8 +40,9 @@ export default function Home() {
     try {
       const debate = await createDebate.mutateAsync({ topic, side });
       setLocation(`/debate/${debate.id}`);
-    } catch (error) {
-      // Error handled in hook
+    } catch (error: any) {
+      setErrorMessage(error.message || "Đã có lỗi xảy ra khi tạo cuộc tranh luận.");
+      setErrorOpen(true);
     }
   };
 
@@ -127,6 +141,31 @@ export default function Home() {
 
         <Footer />
       </main>
+
+      {/* Error Alert Dialog */}
+      <AlertDialog open={errorOpen} onOpenChange={setErrorOpen}>
+        <AlertDialogContent className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-2xl max-w-md w-full">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-red-600 dark:text-red-500 flex items-center gap-2">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              Nội dung không phù hợp
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-600 dark:text-slate-300 mt-2 text-base leading-relaxed">
+              {errorMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6 flex justify-end">
+            <AlertDialogAction
+              onClick={() => setErrorOpen(false)}
+              className="bg-primary hover:bg-primary/90 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
+            >
+              Đã hiểu
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
