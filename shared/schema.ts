@@ -7,6 +7,7 @@ export interface Debate {
   side: string;
   current_round: number;
   moderator_intro?: string;
+  rating?: number | null;
   created_at: string;
 }
 
@@ -24,6 +25,7 @@ export const insertDebateSchema = z.object({
   refined_topic: z.string().optional(),
   current_round: z.number().optional(),
   moderator_intro: z.string().optional(),
+  rating: z.number().optional().nullable(),
 });
 
 export const insertMessageSchema = z.object({

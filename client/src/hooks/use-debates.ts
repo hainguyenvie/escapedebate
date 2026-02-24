@@ -78,15 +78,43 @@ export function useSendMessage() {
 
       return api.debates.addMessage.responses[201].parse(await res.json());
     },
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: [api.debates.get.path, id] });
+    onMutate: async ({ id, content }) => {
+      const queryKey = [api.debates.get.path, id];
+      await queryClient.cancelQueries({ queryKey });
+
+      const previousData = queryClient.getQueryData(queryKey);
+
+      queryClient.setQueryData(queryKey, (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          messages: [
+            ...old.messages,
+            {
+              id: Date.now(),
+              debate_id: id,
+              role: "user",
+              content,
+              created_at: new Date().toISOString()
+            }
+          ]
+        };
+      });
+
+      return { previousData };
     },
-    onError: (error) => {
+    onError: (error: Error, variables, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData([api.debates.get.path, variables.id], context.previousData);
+      }
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
       });
+    },
+    onSettled: (_, __, { id }) => {
+      return queryClient.invalidateQueries({ queryKey: [api.debates.get.path, id] });
     },
   });
 }
@@ -119,5 +147,38 @@ export function useDeleteDebate() {
         variant: "destructive",
       });
     },
+  });
+}
+
+export function useRateDebate() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, rating }: { id: number; rating: number }) => {
+      const url = buildUrl(api.debates.rate.path, { id });
+      const res = await fetch(url, {
+        method: api.debates.rate.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to rate debate");
+      }
+
+      return api.debates.rate.responses[200].parse(await res.json());
+    },
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: [api.debates.get.path, id] });
+      queryClient.invalidateQueries({ queryKey: [api.debates.list.path] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   });
 }

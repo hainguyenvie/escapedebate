@@ -53,6 +53,17 @@ export const api = {
         201: z.custom<Message>(),
         404: errorSchemas.notFound,
       },
+    },
+    rate: {
+      method: 'PATCH' as const,
+      path: '/api/debates/:id/rating' as const,
+      input: z.object({
+        rating: z.number().min(1).max(5)
+      }),
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        404: errorSchemas.notFound,
+      }
     }
   }
 };

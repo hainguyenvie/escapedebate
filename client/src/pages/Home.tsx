@@ -18,7 +18,7 @@ import {
 
 export default function Home() {
   const [topic, setTopic] = useState("");
-  const [side, setSide] = useState<"support" | "oppose">("support");
+  const [side, setSide] = useState<"support" | "oppose" | null>(null);
   const [, setLocation] = useLocation();
   const createDebate = useCreateDebate();
   const { toast } = useToast();
@@ -32,6 +32,15 @@ export default function Home() {
       toast({
         title: "Thiếu thông tin",
         description: "Vui lòng nhập chủ đề bạn muốn tranh luận!",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!side) {
+      toast({
+        title: "Thiếu thông tin",
+        description: "Vui lòng chọn phe của bạn (Ủng hộ hoặc Phản đối)!",
         variant: "destructive",
       });
       return;
@@ -72,7 +81,7 @@ export default function Home() {
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               className="w-full bg-primary text-white placeholder:text-white/70 text-center py-4 px-6 rounded-xl border-none font-semibold text-lg italic shadow-lg focus:ring-4 focus:ring-primary/20 transition-all outline-none"
-              placeholder="Nhập chủ đề ( motion )"
+              placeholder="Nhập chủ đề (motion)"
               type="text"
             />
             <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none">
@@ -83,29 +92,34 @@ export default function Home() {
           </div>
 
           {/* Side Selection */}
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={() => setSide("support")}
-              className={clsx(
-                "border-2 border-primary py-3 px-6 rounded-full font-bold uppercase tracking-wider transition-all duration-200 shadow-sm active:scale-95",
-                side === "support"
-                  ? "bg-primary text-white"
-                  : "bg-white dark:bg-slate-800 text-primary hover:bg-primary hover:text-white"
-              )}
-            >
-              ỦNG HỘ
-            </button>
-            <button
-              onClick={() => setSide("oppose")}
-              className={clsx(
-                "border-2 border-primary py-3 px-6 rounded-full font-bold uppercase tracking-wider transition-all duration-200 shadow-sm active:scale-95",
-                side === "oppose"
-                  ? "bg-primary text-white"
-                  : "bg-white dark:bg-slate-800 text-primary hover:bg-primary hover:text-white"
-              )}
-            >
-              PHẢN ĐỐI
-            </button>
+          <div className="space-y-3">
+            <p className="text-center font-medium text-slate-500 dark:text-slate-400">
+              Chọn phe <span className="font-bold text-slate-700 dark:text-slate-200 border-b-2 border-primary/20 pb-0.5">Ủng hộ</span> hay <span className="font-bold text-slate-700 dark:text-slate-200 border-b-2 border-primary/20 pb-0.5">Phản đối</span> motion:
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => setSide("support")}
+                className={clsx(
+                  "border-2 border-primary py-3 px-6 rounded-full font-bold uppercase tracking-wider transition-all duration-200 shadow-sm active:scale-95",
+                  side === "support"
+                    ? "bg-primary text-white"
+                    : "bg-white dark:bg-slate-800 text-primary hover:bg-primary hover:text-white"
+                )}
+              >
+                ỦNG HỘ
+              </button>
+              <button
+                onClick={() => setSide("oppose")}
+                className={clsx(
+                  "border-2 border-primary py-3 px-6 rounded-full font-bold uppercase tracking-wider transition-all duration-200 shadow-sm active:scale-95",
+                  side === "oppose"
+                    ? "bg-primary text-white"
+                    : "bg-white dark:bg-slate-800 text-primary hover:bg-primary hover:text-white"
+                )}
+              >
+                PHẢN ĐỐI
+              </button>
+            </div>
           </div>
 
           {/* Start Button */}
