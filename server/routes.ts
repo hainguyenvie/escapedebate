@@ -269,9 +269,13 @@ Dựa vào Motion và lập luận của User, đưa ra các lập luận phản
 - **TUYỆT ĐỐI KHÔNG** đưa ra Leading Questions (câu hỏi dẫn dắt khiến người dùng dễ dàng đồng ý).
 - **HÃY ĐẶT** Challenging Questions (câu hỏi thách thức): Câu hỏi khiến người dùng phải khựng lại để suy nghĩ và chất vấn lại niềm tin của chính họ.`;
         } else if (currentRound === 2) {
-          systemPrompt = `Bạn là chuyên gia tranh luận (Phe Phủ định - Máy).
-CONTEXT: Bạn có toàn bộ lịch sử cuộc tranh luận. Người dùng vừa đưa ra 3 luận điểm (mỗi luận điểm ở 1 tin nhắn riêng lẻ trong 3 tin gần nhất). Hãy tổng hợp ý của họ và sử dụng dữ liệu từ các vòng trước để đảm bảo tính nhất quán và phản biện chính xác.
-Nhiệm vụ: Đưa ra 3 LẬP LUẬN CHUYÊN SÂU để phản đối chủ đề (Motion).
+          systemPrompt = `Bạn là chuyên gia tranh luận chuyên nghiệp trong cuộc "ESCAPE AI DEBATE".
+🎯 MOTION (CHỦ ĐỀ): "${motion}"
+📌 VỊ TRÍ CỦA BẠN: Bên ${aiSide} - BẮT BUỘC ${aiSideAction} Motion.
+📌 ĐỐI THỦ: Bên ${userSide} - ${userSideAction} Motion.
+
+CONTEXT: Bạn có toàn bộ lịch sử cuộc tranh luận. Người dùng (Phe ${userSide}) vừa đưa ra 3 luận điểm.
+Nhiệm vụ: Đưa ra 3 LẬP LUẬN CHUYÊN SÂU CỦA RIÊNG BẠN để TUYỆT ĐỐI ${aiSideAction.toUpperCase()} chủ đề (Motion) và bẻ gãy logic của người dùng. KHÔNG ĐƯỢC ĐỒNG TÌNH VỚI NGƯỜI DÙNG DƯỚI MỌI HÌNH THỨC.
 
 YÊU CẦU LOGIC:
 1. **Tính kế thừa**: Phát triển logic dựa trên phần mở đầu của bạn ở Vòng 1. Không rời rạc, không mâu thuẫn.
@@ -306,9 +310,13 @@ Bạn KHÔNG trả về text thường. Bạn bắt buộc trả về JSON Objec
   ]
 }`;
         } else if (currentRound === 3) {
-          systemPrompt = `Bạn là chuyên gia tranh luận (Phe Phủ định - Máy).
-CONTEXT: Bạn đã nắm rõ 3 luận điểm mà User vừa đưa ra ở Vòng 2 qua lịch sử chat.
-Nhiệm vụ: Vòng 3 - CHẤT VẤN. Bạn thực hiện 2 hành động liên tiếp nhưng tách biệt.
+          systemPrompt = `Bạn là chuyên gia tranh luận chuyên nghiệp trong cuộc "ESCAPE AI DEBATE".
+🎯 MOTION (CHỦ ĐỀ): "${motion}"
+📌 VỊ TRÍ CỦA BẠN: Bên ${aiSide} - BẮT BUỘC ${aiSideAction} Motion.
+📌 ĐỐI THỦ: Bên ${userSide} - ${userSideAction} Motion.
+
+CONTEXT: Bạn đã nắm rõ 3 luận điểm mà User (Phe ${userSide}) vừa đưa ra ở Vòng 2 qua lịch sử chat.
+Nhiệm vụ: Vòng 3 - CHẤT VẤN. Bạn thực hiện 2 hành động liên tiếp nhưng tách biệt. TẬP TRUNG BẢO VỆ LẬP TRƯỜNG PHE ${aiSide.toUpperCase()}.
 
 HÀNH ĐỘNG 1: TRẢ LỜI CHẤT VẤN (DEFENSE)
 - **Mục tiêu**: Trả lời trực diện câu hỏi mà Người dùng vừa đặt ra.
@@ -329,9 +337,13 @@ Bạn bắt buộc trả về JSON Object chứa 2 phần riêng biệt để h�
 }
 `;
         } else {
-          systemPrompt = `Bạn là chuyên gia tranh luận (Phe Phủ định - Máy).
+          systemPrompt = `Bạn là chuyên gia tranh luận chuyên nghiệp trong cuộc "ESCAPE AI DEBATE".
+🎯 MOTION (CHỦ ĐỀ): "${motion}"
+📌 VỊ TRÍ CỦA BẠN: Bên ${aiSide} - BẮT BUỘC ${aiSideAction} Motion.
+📌 ĐỐI THỦ: Bên ${userSide} - ${userSideAction} Motion.
+
 CONTEXT: Nhìn lại toàn bộ hành trình tranh luận 4 vòng để đúc kết.
-Nhiệm vụ: Vòng 4 - KẾT LUẬN (FINAL STATEMENT).
+Nhiệm vụ: Vòng 4 - KẾT LUẬN (FINAL STATEMENT). TẬP TRUNG TỔNG KẾT VÀ BẢO VỆ LẬP TRƯỜNG PHE ${aiSide.toUpperCase()}.
 
 MỤC TIÊU:
 - Tổng hợp lại toàn bộ hệ thống lập luận phản đối Motion của bạn một cách súc tích và mạch lạc.
@@ -424,9 +436,13 @@ YÊU CẦU THÁI ĐỘ:
           let aiOpeningSystemPrompt = '';
 
           if (nextRound === 2) {
-            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận (Phe Khẳng định - Máy).
-CONTEXT: Bạn có toàn bộ lịch sử cuộc tranh luận. Hãy sử dụng dữ liệu từ các vòng trước để đảm bảo tính nhất quán và bảo vệ quan điểm chính xác.
-Nhiệm vụ: Đưa ra 3 LẬP LUẬN CHUYÊN SÂU để BẢO VỆ chủ đề (Motion).
+            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận chuyên nghiệp trong cuộc "ESCAPE AI DEBATE".
+🎯 MOTION (CHỦ ĐỀ): "${motion}"
+📌 VỊ TRÍ CỦA BẠN: Bên ${aiSide} - BẮT BUỘC ${aiSideAction} Motion.
+📌 ĐỐI THỦ: Bên ${userSide} - ${userSideAction} Motion.
+
+CONTEXT: Bạn có toàn bộ lịch sử cuộc tranh luận. Hãy sử dụng dữ liệu từ các vòng trước để đảm bảo tính nhất quán.
+Nhiệm vụ: Đưa ra 3 LẬP LUẬN CHUYÊN SÂU CỦA RIÊNG BẠN để TUYỆT ĐỐI ${aiSideAction.toUpperCase()} chủ đề (Motion). KHÔNG ĐƯỢC NHƯỢNG BỘ HAY PHẢN ĐỐI MOTION.
 
 YÊU CẦU LOGIC:
 1. **Tính kế thừa**: 3 luận điểm đưa ra ở Vòng 2 phải là sự phát triển logic dựa trên phần phát biểu mở đầu của bạn ở Vòng 1. Không được đưa ra các ý kiến rời rạc hoặc mâu thuẫn với tư duy trước đó.
@@ -461,9 +477,13 @@ Bạn KHÔNG trả về text thường. Bạn bắt buộc trả về JSON Objec
   ]
 }`;
           } else if (nextRound === 3) {
-            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận (Phe Khẳng định - Máy).
-CONTEXT: Bạn đã nắm rõ 3 luận điểm mà User vừa đưa ra ở Vòng 2 qua lịch sử chat.
-Nhiệm vụ: Vòng 3 - CHẤT VẤN TRỰC TIẾP (Mở đầu vòng).
+            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận chuyên nghiệp trong cuộc "ESCAPE AI DEBATE".
+🎯 MOTION (CHỦ ĐỀ): "${motion}"
+📌 VỊ TRÍ CỦA BẠN: Bên ${aiSide} - BẮT BUỘC ${aiSideAction} Motion.
+📌 ĐỐI THỦ: Bên ${userSide} - ${userSideAction} Motion.
+
+CONTEXT: Bạn đã nắm rõ 3 luận điểm mà User (Phe ${userSide}) vừa đưa ra ở Vòng 2 qua lịch sử chat.
+Nhiệm vụ: Vòng 3 - CHẤT VẤN TRỰC TIẾP (Mở đầu vòng). ĐẶT CÂU HỎI XOÁY VÀO ĐỐI THỦ.
 
 MỤC TIÊU: Đưa ra 01 câu hỏi xoáy sâu vào các lập luận mà Người dùng đã đưa ra ở Vòng 2.
 
@@ -472,9 +492,13 @@ YÊU CẦU CÂU HỎI:
 - **Định dạng**: TUYỆT ĐỐI KHÔNG hỏi câu có thể trả lời "Có" hoặc "Không".
 - **Cấu trúc**: Hãy hỏi "Tại sao...?", "Làm thế nào...?", hoặc "Bạn giải thích thế nào về bằng chứng [Dữ liệu đối lập]...?".`;
           } else { // Round 4
-            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận (Phe Khẳng định - Máy).
+            aiOpeningSystemPrompt = `Bạn là chuyên gia tranh luận chuyên nghiệp trong cuộc "ESCAPE AI DEBATE".
+🎯 MOTION (CHỦ ĐỀ): "${motion}"
+📌 VỊ TRÍ CỦA BẠN: Bên ${aiSide} - BẮT BUỘC ${aiSideAction} Motion.
+📌 ĐỐI THỦ: Bên ${userSide} - ${userSideAction} Motion.
+
 CONTEXT: Nhìn lại toàn bộ hành trình tranh luận 4 vòng để đúc kết.
-Nhiệm vụ: Vòng 4 - KẾT LUẬN (FINAL STATEMENT).
+Nhiệm vụ: Vòng 4 - KẾT LUẬN (FINAL STATEMENT). TẬP TRUNG TỔNG KẾT VÀ BẢO VỆ LẬP TRƯỜNG PHE ${aiSide.toUpperCase()}.
 
 MỤC TIÊU:
 - Tổng hợp lại toàn bộ hệ thống lập luận KHẲNG ĐỊNH Motion của bạn một cách súc tích và mạch lạc.

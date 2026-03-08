@@ -307,7 +307,7 @@ export default function DebateSession() {
 
           <p className="text-slate-500 mt-2 font-medium">
             {selectedRound === 1 ? "Phát biểu mở đầu (150-200 từ)" :
-              selectedRound === 2 ? "Triển khai 3 Lập luận chính kèm bằng chứng" :
+              selectedRound === 2 ? "Triển khai 3 lập luận chính kèm bằng chứng" :
                 selectedRound === 3 ? "Chất vấn - Đặt câu hỏi cho nhau" :
                   selectedRound === 4 ? "Tuyên bố Kết luận cuối cùng" : ""}
           </p>
