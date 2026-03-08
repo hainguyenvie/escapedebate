@@ -8,7 +8,7 @@ export function Footer() {
           </h3>
           <p className="text-base leading-relaxed text-white/90 font-medium">
             Escape AI Debate là nền tảng tiên phong kết hợp trí tuệ nhân tạo để rèn luyện tư duy phản biện.
-            Sứ mệnh của dự án là giúp người trẻ phá vỡ "phòng hồi thanh" (echo chamber), khai phóng góc nhìn
+            Sứ mệnh của dự án là giúp người trẻ phá vỡ Echo Chamber (Buồng vọng thông tin), khai phóng góc nhìn
             đa chiều thông qua các cuộc tranh biện logic.
           </p>
         </div>
