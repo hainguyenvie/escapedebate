@@ -119,3 +119,266 @@
   background-color: #E31E63;
   border-radius: 20px;
 }
+
+/* 3D Keyboard UI System (Cyberpunk) */
+
+.cyberspace-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: #f1f5f9;
+  background-image: url('/images/cyberpunk-bg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+.cyberspace-glow {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at 50% 50%, rgba(233, 30, 99, 0.1) 0%, transparent 70%);
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+/* =========================================
+   PHOTOREALISTIC 3D KEYCAPS
+   ========================================= */
+
+/* The outer shell / base skirt of the key */
+.cyber-key {
+  position: relative;
+  background: #cbd5e1; /* Base gray */
+  border-radius: 12px;
+  box-shadow: 
+    0px 14px 0px 0px #94a3b8, /* Thick front height */
+    0px 25px 30px rgba(0,0,0,0.3), /* Drop shadow */
+    inset 0px 2px 2px rgba(255,255,255,1), /* Top highlight on skirt */
+    inset 2px 0px 2px rgba(255,255,255,0.5), /* Left highlight */
+    inset -2px 0px 2px rgba(0,0,0,0.1); /* Right shading */
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  user-select: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The inner spherical top surface */
+.cyber-key-top {
+  position: absolute;
+  /* Leaves room for the skirt: top, right, bottom (thickest), left */
+  inset: 4px 6px 14px 6px;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-radius: 8px;
+  /* Emulates the finger indent / curve */
+  box-shadow: 
+    inset 0px 6px 10px rgba(0,0,0,0.06), /* Top inside curve dark */
+    inset 0px -6px 10px rgba(255,255,255,1), /* Bottom inside curve light */
+    0px 3px 5px rgba(0,0,0,0.15); /* Ridge shadow on the skirt */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  color: #334155;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+/* Active Press State */
+.cyber-key:active, .cyber-key.active-press {
+  transform: translateY(8px);
+  box-shadow: 
+    0px 6px 0px 0px #94a3b8, /* Compressed front height */
+    0px 10px 15px rgba(0,0,0,0.3), /* Tighter drop shadow */
+    inset 0px 2px 2px rgba(255,255,255,1),
+    inset 2px 0px 2px rgba(255,255,255,0.5),
+    inset -2px 0px 2px rgba(0,0,0,0.1);
+}
+
+/* ---- GIANT ESC KEY ---- */
+.cyber-key-esc {
+  background: #e2e8f0;
+  border-radius: 24px;
+  box-shadow: 
+    0px 30px 0px 0px #94a3b8,
+    0px 50px 60px rgba(233, 30, 99, 0.5), /* Intense Pink Drop Shadow */
+    0px 0px 80px rgba(233, 30, 99, 0.4),  /* Outer Pink Glow */
+    inset 0px 3px 3px rgba(255,255,255,1);
+}
+.cyber-key-esc .cyber-key-top {
+  inset: 8px 12px 30px 12px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  box-shadow: 
+    inset 0px 12px 20px rgba(0,0,0,0.05),
+    inset 0px -12px 20px rgba(255,255,255,1),
+    0px 5px 8px rgba(0,0,0,0.15);
+  font-size: clamp(3rem, 8vw, 5rem);
+  color: #0f172a;
+  letter-spacing: -2px;
+}
+.cyber-key-esc:active:not(:disabled) {
+  transform: translateY(15px);
+  box-shadow: 
+    0px 15px 0px 0px #94a3b8,
+    0px 20px 30px rgba(233, 30, 99, 0.5),
+    0px 0px 60px rgba(233, 30, 99, 0.4),
+    inset 0px 3px 3px rgba(255,255,255,1);
+}
+.cyber-key-esc::after {
+  /* Backlight aura */
+  content: "";
+  position: absolute;
+  inset: -20px;
+  background: radial-gradient(ellipse at center, rgba(233, 30, 99, 0.9) 0%, transparent 70%);
+  filter: blur(25px);
+  z-index: -1;
+  border-radius: 50%;
+  animation: pulse-neon 2s infinite alternate;
+}
+
+/* ---- INPUT ENTER KEY ---- */
+.cyber-key-enter-body {
+  background: #cbd5e1;
+  border-radius: 16px;
+  box-shadow: 
+    0px 12px 0px 0px #94a3b8,
+    0px 20px 25px rgba(0,0,0,0.25),
+    inset 0px 2px 2px rgba(255,255,255,1);
+}
+.cyber-key-enter-top {
+  position: absolute;
+  inset: 4px 6px 12px 6px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 
+    inset 0px 6px 10px rgba(0,0,0,0.04),
+    inset 0px -6px 10px rgba(255,255,255,1),
+    0px 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+}
+
+/* The Pink Board / Chassis holding Debate History & ESC */
+.pink-board {
+  background: linear-gradient(135deg, #E91E63, #c2185b);
+  border-radius: 28px;
+  padding: 24px;
+  box-shadow: 
+    0 15px 30px rgba(0,0,0,0.4),     /* Deep drop shadow */
+    inset 0 4px 6px rgba(255,255,255,0.4), /* Sharp top highlight */
+    inset 0 -8px 0 rgba(0,0,0,0.3);  /* Bottom shadow edges */
+  position: relative;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Floating Space/Ctrl Keys */
+.key-floating {
+  position: absolute;
+  z-index: -1;
+  opacity: 0.9;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 15px rgba(0,0,0,0.25));
+  transform-style: preserve-3d;
+  animation: float-key 8s infinite ease-in-out alternate;
+}
+
+@keyframes float-key {
+  0% { transform: translateY(0) rotateX(25deg) rotateY(-15deg) scale(0.9); }
+  100% { transform: translateY(-40px) rotateX(-5deg) rotateY(15deg) scale(1.05); }
+}
+@keyframes pulse-neon {
+  0% { opacity: 0.7; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1.1); }
+}
+
+/* ---- SPARKLES (Hút thông tin/Lan tỏa) ---- */
+.sparkle-star {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 8px 2px #fff, 0 0 15px 4px #ff4081;
+  opacity: 0;
+  animation: sparkle-shoot 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+}
+
+.sparkle-star::before, .sparkle-star::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  box-shadow: 0 0 10px #E91E63;
+  border-radius: 100%;
+}
+
+.sparkle-star::before {
+  width: 24px;
+  height: 2px;
+}
+
+.sparkle-star::after {
+  width: 2px;
+  height: 24px;
+}
+
+@keyframes sparkle-shoot {
+  0% {
+    transform: translate(0, 0) scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+    transform: translate(calc(var(--tx) * 0.2), calc(var(--ty) * 0.2)) scale(1.2) rotate(45deg);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(0) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+
+/* LED Indicator for TAB keys */
+.key-led {
+  width: 18px;
+  height: 6px;
+  border-radius: 3px;
+  background: #333;
+  box-shadow: inset 0 2px 3px rgba(0,0,0,0.8);
+  margin-top: 8px;
+}
+.key-led.green {
+  background: #10b981;
+  box-shadow: 0 0 12px #10b981, inset 0 1px 2px rgba(255,255,255,0.8);
+}
+.key-led.red {
+  background: #ef4444;
+  box-shadow: 0 0 12px #ef4444, inset 0 1px 2px rgba(255,255,255,0.8);
+}
+
+/* Custom Scrollbar override for whole body */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
