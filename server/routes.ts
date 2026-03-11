@@ -228,6 +228,16 @@ LƯU Ý: Tuyệt đối từ chối các nội dung CHÍNH TRỊ dù ở bất k
         return res.status(201).json(savedUserMessage);
       }
 
+      // Vòng 3 - Scenario A (User = Khẳng định/Ủng hộ):
+      // Lượt 1: User hỏi → AI defense + hỏi ngược (xử lý bên dưới)
+      // Lượt 2: User trả lời câu hỏi của AI → kết thúc vòng (chỉ lưu + tổng kết)
+      if (currentRound === 3 && debate.side === 'support' && userMessagesInCurrentRound === 2) {
+        // Đây là lượt 2 của user (trả lời câu hỏi AI đặt ra)
+        // Chỉ lưu tin nhắn rồi tổng kết vòng, KHÔNG kích hoạt AI phản hồi thêm
+        await generateModeratorSummary(id, currentRound, nextRound, isLastRound, nextRoundName, motion);
+        return res.status(201).json(savedUserMessage);
+      }
+
       // =================================================================================
       // LOGIC XỬ LÝ THEO PHE (SIDE)
       // =================================================================================
@@ -306,19 +316,20 @@ YÊU CẦU LOGIC:
   ]
 }`;
         } else if (currentRound === 3) {
+          // Scenario A - Lượt 1: User (Khẳng định) hỏi → AI (Phủ định) defense + hỏi ngược
           systemPrompt = `Bạn là chuyên gia tranh luận chuyên nghiệp trong cuộc "ESCAPE AI DEBATE".
 🎯 MOTION (CHỦ ĐỀ): "${motion}"
 📌 VỊ TRÍ CỦA BẠN: Bên ${aiSide} - BẮT BUỘC ${aiSideAction} Motion.
 📌 ĐỐI THỦ: Bên ${userSide} - ${userSideAction} Motion.
 
 CONTEXT: Bạn đã nắm rõ 3 luận điểm mà User (Phe ${userSide}) vừa đưa ra ở Vòng 2 qua lịch sử chat.
-Nhiệm vụ: Vòng 3 - CHẤT VẤN. Bạn thực hiện 2 hành động liên tiếp nhưng tách biệt. TẬP TRUNG BẢO VỆ LẬP TRƯỜNG PHE ${aiSide.toUpperCase()}.
+Nhiệm vụ: Vòng 3 - ĐẶT CÂU HỎI PHẢN BIỆN. Bạn thực hiện 2 hành động liên tiếp nhưng tách biệt. TẬP TRUNG BẢO VỆ LẬP TRƯỜNG PHE ${aiSide.toUpperCase()}.
 
-HÀNH ĐỘNG 1: TRẢ LỜI CHẤT VẤN (DEFENSE)
+HÀNH ĐỘNG 1: TRẢ LỜI CÂU HỎI (DEFENSE)
 - **Mục tiêu**: Trả lời trực diện câu hỏi mà Người dùng vừa đặt ra.
 - **Yêu cầu**: Câu trả lời phải đanh thép, bảo vệ vững chắc quan điểm nhưng phải dựa trên dữ liệu. Sau khi trả lời, KHÔNG đặt thêm câu hỏi ngay trong phần này mà chốt lại vấn đề.
 
-HÀNH ĐỘNG 2: ĐẶT CÂU HỎI XOÁY (OFFENSE)
+HÀNH ĐỘNG 2: ĐẶT CÂU HỎI PHẢN BIỆN (OFFENSE)
 - **Mục tiêu**: Đưa ra 01 câu hỏi xoáy sâu vào các lập luận mà Người dùng đã đưa ra ở Vòng 2.
 - **Yêu cầu**: 
   + Câu hỏi phải mang tính thách thức (challenge), tìm ra "điểm mù" hoặc sự mâu thuẫn trong logic của Người dùng (dựa trên 3 quan điểm Vòng 2).
@@ -329,7 +340,7 @@ HÀNH ĐỘNG 2: ĐẶT CÂU HỎI XOÁY (OFFENSE)
 Bạn bắt buộc trả về JSON Object chứa 2 phần riêng biệt để hệ thống hiển thị thành 2 hộp chat:
 {
   "answer": "Nội dung trả lời câu hỏi của User (Defense)...",
-  "question": "Nội dung câu hỏi chất vấn ngược lại User (Offense)..."
+  "question": "Nội dung câu hỏi phản biện ngược lại User (Offense)..."
 }
 `;
         } else {
@@ -366,27 +377,31 @@ YÊU CẦU THÁI ĐỘ:
 
 
         // Xử lý response đặc biệt cho Round 3 (Trả về 2 tin nhắn: Answer & Question)
+        // Scenario A - Lượt 1: AI defense + hỏi ngược; KHÔNG kết thúc vòng, chờ user trả lời lượt 2
         if (currentRound === 3) {
           const jsonContent = JSON.parse(response.choices[0].message.content || "{\"answer\": \"\", \"question\": \"\"}");
 
-          // Message 1: Trả lời
+          // Message 1: Trả lời câu hỏi của User
           if (jsonContent.answer) {
             aiMessage = await storage.createMessage({
               debate_id: id,
-              role: "assistant", // Vẫn là assistant
+              role: "assistant",
               content: jsonContent.answer
             });
           }
 
-          // Message 2: Hỏi lại
+          // Message 2: Hỏi ngược lại User (phe Khẳng định)
           if (jsonContent.question) {
-            // Đợi 1 chút để thứ tự tin nhắn đảm bảo (dù await là tuần tự nhưng an toàn)
             aiMessage = await storage.createMessage({
               debate_id: id,
               role: "assistant",
               content: jsonContent.question
             });
           }
+
+          // KHÔNG gọi generateModeratorSummary ở đây
+          // Vòng 3 Scenario A chỉ kết thúc khi user gửi lượt 2 (đã xử lý ở đầu hàm)
+          return res.status(201).json(aiMessage);
         }
         // Xử lý response đặc biệt cho Round 2 (Trả về 3 tin nhắn: Arguments)
         // 2-STEP: Step 1 = AI sinh luận điểm, Step 2 = resolve link thực từ Semantic Scholar / CrossRef
@@ -430,11 +445,102 @@ YÊU CẦU THÁI ĐỘ:
         await generateModeratorSummary(id, currentRound, nextRound, isLastRound, nextRoundName, motion);
 
       } else {
-        // SCENARIO B: USER LÀ PHẢN ĐỐI (OPPOSE)
-        // Flow: 
-        // 1. AI (Support) đã nói mở đầu round (đã có trong history hoặc create debate)
-        // 2. User (Oppose) vừa nói (đã lưu ở bước 1) -> Đây là lượt KẾT THÚC VÒNG.
+        // SCENARIO B: USER LÀ PHẢN ĐỐI (OPPOSE), AI LÀ KHẲNG ĐỊNH
+        // Vòng 3 Flow mới:
+        //   - Lượt 1: AI mở vòng bằng câu hỏi (nextRound===3, xử lý ở bên dưới)
+        //   - Lượt 2: User trả lời câu hỏi AI + hỏi ngược lại (userMessagesInCurrentRound === 1)
+        //             → AI (Khẳng định) phải trả lời câu hỏi của user trước khi kết thúc vòng
+        //   - Sau đó: Kết thúc vòng (tổng kết + mở vòng tiếp)
+        //
+        // Vòng khác: User nói xong → kết thúc vòng ngay
 
+        if (currentRound === 3 && userMessagesInCurrentRound === 1) {
+          // Lượt 2 của scenario B vòng 3:
+          // User vừa trả lời câu hỏi của AI đồng thời hỏi ngược lại AI
+          // AI (phe Khẳng định) phải trả lời câu hỏi đó trước khi kết thúc vòng
+
+          const aiAnswerPrompt = `Bạn là chuyên gia tranh luận chuyên nghiệp trong cuộc "ESCAPE AI DEBATE".
+🎯 MOTION (CHỦ ĐỀ): "${motion}"
+📌 VỊ TRÍ CỦA BẠN: Bên ${aiSide} - BẮT BUỘC ${aiSideAction} Motion.
+📌 ĐỐI THỦ: Bên ${userSide} - ${userSideAction} Motion.
+
+CONTEXT: Bạn đang ở Vòng 3 - Đặt câu hỏi phản biện. Người dùng (Phe ${userSide}) vừa trả lời câu hỏi bạn đặt ra trước đó, đồng thời đặt câu hỏi ngược lại bạn.
+Nhiệm vụ: Với tư cách phe ${aiSide} (Khẳng định), bạn phải TRẢ LỜI câu hỏi mà Người dùng vừa đặt ra cho bạn.
+
+YÊU CẦU:
+- Trả lời trực diện, đanh thép và dựa trên dữ liệu/logic.
+- Bảo vệ vững chắc lập trường ${aiSideAction} Motion của bạn.
+- KHÔNG đặt thêm câu hỏi mới trong phần này.
+- Chốt lại quan điểm một cách dứt khoát.
+
+ĐỊNH DẠNG: Đoạn văn thuần túy (không cần JSON).`;
+
+          const aiAnswerResponse = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              { role: "system", content: aiAnswerPrompt },
+              ...(await storage.getMessages(id)).map(m => ({
+                role: m.role as "user" | "assistant" | "system",
+                content: m.content
+              }))
+            ]
+          });
+
+          const aiAnswerContent = aiAnswerResponse.choices[0].message.content || "Tôi xin trả lời câu hỏi của bạn.";
+          aiMessage = await storage.createMessage({
+            debate_id: id,
+            role: "assistant",
+            content: aiAnswerContent
+          });
+
+          // Sau khi AI đã trả lời → kết thúc vòng 3
+          await generateModeratorSummary(id, currentRound, nextRound, isLastRound, nextRoundName, motion);
+
+          // Mở vòng tiếp theo nếu chưa kết thúc debate
+          if (!isLastRound) {
+            // Vòng 4: AI mở đầu
+            const aiV4Prompt = `Bạn là chuyên gia tranh luận chuyên nghiệp trong cuộc "ESCAPE AI DEBATE".
+🎯 MOTION (CHỦ ĐỀ): "${motion}"
+📌 VỊ TRÍ CỦA BẠN: Bên ${aiSide} - BẮT BUỘC ${aiSideAction} Motion.
+📌 ĐỐI THỦ: Bên ${userSide} - ${userSideAction} Motion.
+
+CONTEXT: Nhìn lại toàn bộ hành trình tranh luận 4 vòng để đúc kết.
+Nhiệm vụ: Vòng 4 - KẾT LUẬN (FINAL STATEMENT). TẬP TRUNG TỔNG KẾT VÀ BẢO VỆ LẬP TRƯỜNG PHE ${aiSide.toUpperCase()}.
+
+MỤC TIÊU:
+- Tổng hợp lại toàn bộ hệ thống lập luận KHẲNG ĐỊNH Motion của bạn một cách súc tích và mạch lạc.
+- Khẳng định lại quan điểm cốt lõi (World View) mà bạn bảo vệ.
+
+YÊU CẦU THÁI ĐỘ:
+- **Không áp đặt**: Tôn trọng quan điểm đối lập. Tránh giọng điệu dạy đời.
+- **Không bảo thủ**: Thể hiện tư duy cầu thị.
+- **Không đưa ra lập luận mới**: Chỉ tổng kết những gì đã trình bày trong 3 vòng trước.
+
+ĐỊNH DẠNG: Một đoạn văn nghị luận hùng hồn, giàu cảm xúc và gây ấn tượng mạnh để khép lại tranh luận.`;
+
+            const v4Response = await openai.chat.completions.create({
+              model: "gpt-4o-mini",
+              messages: [
+                { role: "system", content: aiV4Prompt },
+                ...(await storage.getMessages(id)).map(m => ({
+                  role: m.role as "user" | "assistant" | "system",
+                  content: m.content
+                }))
+              ]
+            });
+
+            const v4Content = v4Response.choices[0].message.content || "Mời bạn tiếp tục.";
+            aiMessage = await storage.createMessage({
+              debate_id: id,
+              role: "assistant",
+              content: v4Content
+            });
+          }
+
+          return res.status(201).json(aiMessage);
+        }
+
+        // --- Các vòng còn lại (không phải vòng 3 lượt 2): User nói xong → kết thúc vòng ---
         // --- 1. Moderator Summary NGAY LẬP TỨC (vì vòng đã hết) ---
         await generateModeratorSummary(id, currentRound, nextRound, isLastRound, nextRoundName, motion);
 
@@ -498,7 +604,7 @@ YÊU CẦU LOGIC:
 📌 ĐỐI THỦ: Bên ${userSide} - ${userSideAction} Motion.
 
 CONTEXT: Bạn đã nắm rõ 3 luận điểm mà User (Phe ${userSide}) vừa đưa ra ở Vòng 2 qua lịch sử chat.
-Nhiệm vụ: Vòng 3 - CHẤT VẤN TRỰC TIẾP (Mở đầu vòng). ĐẶT CÂU HỎI XOÁY VÀO ĐỐI THỦ.
+Nhiệm vụ: Vòng 3 - ĐẶT CÂU HỎI PHẢN BIỆN (Mở đầu vòng - AI đi trước). Bạn là phe Khẳng định, hãy đặt câu hỏi phản biện cho phe Phủ định.
 
 MỤC TIÊU: Đưa ra 01 câu hỏi xoáy sâu vào các lập luận mà Người dùng đã đưa ra ở Vòng 2.
 

@@ -174,7 +174,15 @@ export default function DebateSession() {
       if (userMessagesInActiveRoundCount === 2) return "Nhập lập luận 3/3 kèm bằng chứng...";
       return "Đang chờ máy phản hồi...";
     }
-    if (round === 3) return "Đặt câu hỏi phản biện...";
+    if (round === 3) {
+      // Scenario A (user = Ủng hộ/Khẳng định): lượt 1 hỏi, lượt 2 trả lời
+      if (debate?.side === 'support') {
+        if (userMessagesInActiveRoundCount === 0) return "Đặt câu hỏi phản biện cho đối phương...";
+        if (userMessagesInActiveRoundCount === 1) return "Trả lời câu hỏi mà AI đặt ra cho bạn...";
+      }
+      // Scenario B (user = Phản đối/Phủ định): chỉ 1 lượt (trả lời + hỏi ngược)
+      return "Trả lời câu hỏi của AI và đặt câu hỏi phản biện...";
+    }
     if (round === 4) return "Đưa ra Tuyên bố Kết luận cuối cùng...";
     return "Nhập tin nhắn...";
   };
@@ -420,8 +428,10 @@ export default function DebateSession() {
             })}
           </AnimatePresence>
 
-          {/* Loading State - Chỉ hiện khi đang ở đúng vòng active và không phải lúc gửi lập luận 1, 2 của vòng 2 */}
-          {sendMessage.isPending && selectedRound === activeRound && (activeRound !== 2 || userMessagesInActiveRoundCount >= 3) && (
+          {/* Loading State - hiện khi đang ở đúng vòng active và AI đang xử lý */}
+          {sendMessage.isPending && selectedRound === activeRound &&
+            (activeRound !== 2 || userMessagesInActiveRoundCount >= 3) &&
+            (activeRound !== 3 || debate.side !== 'support' || userMessagesInActiveRoundCount >= 1) && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -483,7 +493,10 @@ export default function DebateSession() {
                       handleSend();
                     }
                   }}
-                  disabled={sendMessage.isPending && (activeRound !== 2 || userMessagesInActiveRoundCount >= 3)}
+                  disabled={sendMessage.isPending &&
+                    (activeRound !== 2 || userMessagesInActiveRoundCount >= 3) &&
+                    (activeRound !== 3 || debate.side !== 'support' || userMessagesInActiveRoundCount >= 1)
+                  }
                   rows={1}
                   className="w-full bg-primary text-white placeholder:text-white/60 py-4 px-6 rounded-[28px] border-none shadow-lg focus:ring-4 focus:ring-primary/20 outline-none font-medium disabled:opacity-50 resize-none overflow-y-auto block min-h-[56px] leading-[24px] scrollbar-hide"
                   style={{ maxHeight: '300px' }}
@@ -509,7 +522,11 @@ export default function DebateSession() {
               </div>
               <button
                 onClick={handleSend}
-                disabled={!input.trim() || !isWordCountValid || (sendMessage.isPending && (activeRound !== 2 || userMessagesInActiveRoundCount >= 3))}
+                disabled={!input.trim() || !isWordCountValid || (
+                  sendMessage.isPending &&
+                  (activeRound !== 2 || userMessagesInActiveRoundCount >= 3) &&
+                  (activeRound !== 3 || debate.side !== 'support' || userMessagesInActiveRoundCount >= 1)
+                )}
                 className="bg-primary hover:bg-[#C2185B] text-white px-8 rounded-full font-bold uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-95 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none h-[56px] shrink-0"
               >
                 GỬI
