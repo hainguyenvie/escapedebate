@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useRoute } from "wouter";
 import { useDebate, useSendMessage, useRateDebate } from "@/hooks/use-debates";
 import { Header } from "@/components/Header";
@@ -7,6 +8,21 @@ import { Footer } from "@/components/Footer";
 import { Loader2, History, AlertCircle, Star, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
+
+// Custom link component: mở link tab mới, an toàn
+const MarkdownLink = ({ href, children }: { href?: string; children?: React.ReactNode }) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="inline-flex items-center gap-1 text-primary font-semibold underline underline-offset-2 hover:text-primary/80 transition-colors break-all"
+  >
+    {children}
+    <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+    </svg>
+  </a>
+);
 
 export default function DebateSession() {
   const [, params] = useRoute("/debate/:id");
@@ -29,7 +45,7 @@ export default function DebateSession() {
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 300)}px`;
     }
   }, [input]);
 
@@ -97,9 +113,15 @@ export default function DebateSession() {
     return grouped;
   }, [messages]);
 
+  const MIN_WORDS = 50;
+  const MAX_WORDS = 150;
+
+  const wordCount = input.trim() === '' ? 0 : input.trim().split(/\s+/).length;
+  const isWordCountValid = wordCount >= MIN_WORDS && wordCount <= MAX_WORDS;
+
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!input.trim() || sendMessage.isPending) return;
+    if (!input.trim() || sendMessage.isPending || !isWordCountValid) return;
 
     const content = input;
     setInput("");
@@ -152,7 +174,7 @@ export default function DebateSession() {
       if (userMessagesInActiveRoundCount === 2) return "Nhập lập luận 3/3 kèm bằng chứng...";
       return "Đang chờ máy phản hồi...";
     }
-    if (round === 3) return "Chất vấn - Đặt câu hỏi cho nhau...";
+    if (round === 3) return "Đặt câu hỏi phản biện...";
     if (round === 4) return "Đưa ra Tuyên bố Kết luận cuối cùng...";
     return "Nhập tin nhắn...";
   };
@@ -308,7 +330,7 @@ export default function DebateSession() {
           <p className="text-slate-500 mt-2 font-medium">
             {selectedRound === 1 ? "Phát biểu mở đầu (150-200 từ)" :
               selectedRound === 2 ? "Triển khai 3 lập luận chính kèm bằng chứng" :
-                selectedRound === 3 ? "Chất vấn - Đặt câu hỏi cho nhau" :
+                selectedRound === 3 ? "Đặt câu hỏi phản biện" :
                   selectedRound === 4 ? "Tuyên bố Kết luận cuối cùng" : ""}
           </p>
         </div>
@@ -343,7 +365,10 @@ export default function DebateSession() {
                         </span>
                       </div>
                       <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-l-4 border-amber-500 p-6 rounded-lg shadow-sm prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed font-medium break-words [&_a]:break-all [&_p]:break-words">
-                        <ReactMarkdown>
+                      <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{ a: MarkdownLink }}
+                        >
                           {msg.content}
                         </ReactMarkdown>
                       </div>
@@ -381,11 +406,11 @@ export default function DebateSession() {
                     "bg-primary/5 dark:bg-primary/10 border border-primary/20 p-6 rounded-2xl max-w-2xl",
                     isUser ? "rounded-tr-none" : "rounded-tl-none"
                   )}>
-                    <div className={clsx(
-                      "prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed font-medium break-words [&_a]:break-all [&_p]:break-words",
-                      isUser ? "text-right prose-p:text-right prose-headings:text-right" : ""
-                    )}>
-                      <ReactMarkdown>
+                    <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed font-medium break-words [&_p]:break-words">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{ a: MarkdownLink }}
+                      >
                         {msg.content}
                       </ReactMarkdown>
                     </div>
@@ -446,7 +471,7 @@ export default function DebateSession() {
         {/* Action Area: Input khi active, hoặc Thông báo khi xem history */}
         <div className="pb-8 sticky bottom-0 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm pt-4 border-t border-slate-200 dark:border-slate-800 -mx-4 px-4 md:mx-0 md:px-0 md:bg-transparent md:border-none md:static">
           {showInputArea ? (
-            <div className="flex gap-3 items-end">
+            <div className="flex gap-3 items-end pb-8">
               <div className="relative flex-1">
                 <textarea
                   ref={textareaRef}
@@ -460,14 +485,31 @@ export default function DebateSession() {
                   }}
                   disabled={sendMessage.isPending && (activeRound !== 2 || userMessagesInActiveRoundCount >= 3)}
                   rows={1}
-                  className="w-full bg-primary text-white placeholder:text-white/60 py-4 px-6 rounded-[28px] border-none shadow-lg focus:ring-4 focus:ring-primary/20 outline-none font-medium disabled:opacity-50 resize-none overflow-y-auto block min-h-[56px] leading-[24px]"
-                  style={{ maxHeight: '200px' }}
+                  className="w-full bg-primary text-white placeholder:text-white/60 py-4 px-6 rounded-[28px] border-none shadow-lg focus:ring-4 focus:ring-primary/20 outline-none font-medium disabled:opacity-50 resize-none overflow-y-auto block min-h-[56px] leading-[24px] scrollbar-hide"
+                  style={{ maxHeight: '300px' }}
                   placeholder={getPlaceholder(activeRound)}
                 />
+                {/* Word counter */}
+                <div className={clsx(
+                  "absolute -bottom-6 right-0 text-xs font-semibold transition-colors",
+                  input.trim() === ''
+                    ? "text-white/50"
+                    : !isWordCountValid
+                      ? "text-red-400"
+                      : "text-white/70"
+                )}>
+                  {wordCount < MIN_WORDS && input.trim() !== '' && (
+                    <span className="mr-1 text-red-400">(tối thiểu {MIN_WORDS} chữ)</span>
+                  )}
+                  {wordCount > MAX_WORDS && (
+                    <span className="mr-1 text-red-400">(vượt giới hạn)</span>
+                  )}
+                  <span>{wordCount}/{MAX_WORDS}</span>
+                </div>
               </div>
               <button
                 onClick={handleSend}
-                disabled={!input.trim() || (sendMessage.isPending && (activeRound !== 2 || userMessagesInActiveRoundCount >= 3))}
+                disabled={!input.trim() || !isWordCountValid || (sendMessage.isPending && (activeRound !== 2 || userMessagesInActiveRoundCount >= 3))}
                 className="bg-primary hover:bg-[#C2185B] text-white px-8 rounded-full font-bold uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-95 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none h-[56px] shrink-0"
               >
                 GỬI
