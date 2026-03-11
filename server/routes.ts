@@ -47,36 +47,34 @@ export async function registerRoutes(
         messages: [
           {
             role: "system",
-            content: `Bạn là chuyên gia điều phối cuộc tranh luận chuyên nghiệp. Nhiệm vụ của bạn là KIỂM DUYỆT NỘI DUNG và sau đó (nếu an toàn) mới tinh chỉnh chủ đề.
+            content: `Bạn là chuyên gia điều phối cuộc tranh luận chuyên nghiệp. Nhiệm vụ của bạn là KIỂM DUYỆT NỘI DUNG và sau đó (nếu an toàn) tinh chỉnh chủ đề.
 
 1. KIỂM DUYỆT NỘI DUNG (Content Moderation):
-- Kiểm tra xem chủ đề có vi phạm các tiêu chuẩn an toàn không:
-  + Chính trị nhạy cảm: Tuyệt đối CẤM các chủ đề liên quan đến chính trị, thể chế, cơ quan nhà nước, đảng phái, biểu tình, bạo loạn, luật pháp chính trị của BẤT KỲ quốc gia/vùng lãnh thổ nào (không chỉ riêng Việt Nam).
-  + Xuyên tạc lịch sử.
-  + Kích động bạo lực, thù hằn, gây hại, giết người, tự sát.
-  + Nội dung đồi trụy, phản cảm, kỳ thị chủng tộc, tôn giáo, giới tính.
-- Nếu VI PHẠM: Trả về "is_safe": false và lý do từ chối lịch sự nhưng kiên quyết.
+- Kiểm tra xem chủ đề có vi phạm các tiêu chuẩn an toàn không (Chính trị, bạo lực, thù hằn, đồi trụy...).
+- Nếu VI PHẠM: Trả về "is_safe": false và lý do từ chối.
 
 2. TINH CHỈNH CHỦ ĐỀ (Nếu an toàn):
-- PARAPHRASE chủ đề thành một Motion (câu khẳng định) chau chuốt, rõ ràng, có tính debatable cao.
-- Tạo phần tóm tắt và hướng dẫn cho vòng tranh luận.
+- Chuyển đổi chủ đề thành một Motion (Câu khẳng định/Mệnh đề) mang tính học thuật, rõ ràng.
+- QUAN TRỌNG: Motion phải là câu KHẲNG ĐỊNH (Proposition). 
+- GIỮ NGUYÊN BẢN (Polarity Preservation): KHÔNG ĐƯỢC đảo ngược ý nghĩa của chủ đề gốc. 
+  + Ví dụ: Nếu gốc là "Nên ăn táo", Motion phải là "Việc ăn táo mang lại lợi ích toàn diện". KHÔNG ĐƯỢC đổi thành "Không nên ăn táo".
+  + Nếu gốc là một ý kiến trái chiều như "Hôn nhân là gánh nặng", Motion có thể là "Hôn nhân hiện đại mang lại nhiều gánh nặng hơn là hạnh phúc".
+- SÁNG TẠO VỪA PHẢI: Chỉ chau chuốt từ ngữ cho chuyên nghiệp, không được thêm thắt các ý tưởng làm lệch đi trọng tâm ban đầu của người dùng.
 
 3. ĐỊNH DẠNG JSON OUTPUT:
 {
   "is_safe": boolean, 
-  "refusal_reason": "Lý do từ chối (nếu is_safe=false)",
-  "refined_topic": "Motion đã cải thiện",
+  "refusal_reason": "Lý do (nếu is_safe=false)",
+  "refined_topic": "Motion (Câu khẳng định)",
   "summary": "Tóm tắt ngắn gọn",
   "guidance": "Hướng dẫn chi tiết"
 }
 
-LƯU Ý:
-- Nếu chủ đề chỉ là vấn đề xã hội, triết học gây tranh cãi (nhân bản vô tính, tử hình, nạo phá thai, LGBT, môi trường...) nhưng được đặt ra để tranh luận văn minh, hãy REWRITE thành vấn đề học thuật thay vì từ chối.
-- Tuyệt đối từ chối các nội dung ĐỘC HẠI, PHẠM PHÁP, xuyên tạc lịch sử hoặc BẤT KỲ CHỦ ĐỀ CHÍNH TRỊ NÀO (bất kể là quốc gia nào).`
+LƯU Ý: Tuyệt đối từ chối các nội dung CHÍNH TRỊ dù ở bất kỳ quốc gia nào.`
           },
           {
             role: "user",
-            content: `Chủ đề gốc từ người dùng: "${input.topic}"\nNgười dùng đứng về phía: ${sideText}`
+            content: `Chủ đề gốc từ người dùng: "${input.topic}"`
           }
         ],
         response_format: { type: "json_object" }
@@ -124,21 +122,16 @@ LƯU Ý:
 📌 ĐỐI THỦ: Bên PHỦ ĐỊNH - PHẢN ĐỐI Motion (Người dùng).
 
 🔥 NHIỆM VỤ VÒNG 1 - PHÁT BIỂU MỞ ĐẦU (AI ĐI TRƯỚC):
-Dựa vào Motion, bạn hãy mở màn cuộc tranh luận bằng cách đưa ra hệ thống lập luận ủng hộ Motion.
+Đưa ra phát biểu mở đầu ngắn gọn, súc tích để tuyên bố lập trường ủng hộ Motion.
 
 📋 YÊU CẦU NỘI DUNG:
-1. **Lập luận bảo vệ**: Đưa ra các lập luận hợp lý, sắc bén để bảo vệ chủ đề.
-2. **Định nghĩa**: Xác định và làm rõ các thuật ngữ chính trong Motion (Model Debate).
-3. **Tóm tắt**: Tóm tắt ngắn gọn những điểm chính của bạn.
-4. **Chuẩn bị cho Vòng 2**: Những lập luận này phải là nền tảng phù hợp để có thể triển khai thành 3 LUẬN ĐIỂM CHÍNH (3 Pillars) ở vòng tiếp theo.
+1. **Lập trường rõ ràng**: Tuyên bố ngắn gọn lập trường ủng hộ Motion.
+2. **1-2 luận điểm cốt lõi**: Chỉ nêu 1-2 lý do chính, KHÔNG giải thích dài dòng.
+3. **Định nghĩa thuật ngữ** (nếu cần): Một câu ngắn làm rõ khái niệm chính.
 
-⚡ CHIẾN THUẬT TÂM LÝ:
-- Khuyến khích sự bất đồng thực sự (Genuine Disagreement).
-- Phong thái tự tin, tiên phong nhưng không áp đặt.
-
-❓ KỸ THUẬT ĐẶT CÂU HỎI:
-- **TUYỆT ĐỐI KHÔNG** đưa ra Leading Questions (câu hỏi dẫn dắt/phiến diện khiến đối phương dễ dàng đồng ý).
-- **HÃY ĐẶT** Challenging Questions (câu hỏi thách thức): Câu hỏi khiến người dùng phải khựng lại để suy nghĩ và chất vấn lại niềm tin của chính họ.`;
+⚡ PHONG CÁCH:
+- Ngắn gọn, tự tin, tiên phong.
+- KHÔNG đặt câu hỏi, KHÔNG kêu gọi phản hồi.`;
 
         const aiResponse = await openai.chat.completions.create({
           model: "gpt-4o-mini",
@@ -220,7 +213,7 @@ Dựa vào Motion, bạn hãy mở màn cuộc tranh luận bằng cách đưa r
       const isLastRound = currentRound >= 4;
       const nextRoundName = isLastRound ? "KẾT THÚC DEBATE"
         : nextRound === 2 ? "Vòng 2: Đưa ra 3 lập luận chính kèm bằng chứng"
-          : nextRound === 3 ? "Vòng 3: Chất vấn - Đặt câu hỏi cho nhau"
+          : nextRound === 3 ? "Vòng 3: Đặt câu hỏi phản biện"
             : "Vòng 4: Kết luận";
 
       // 4. Kiểm tra tin nhắn vòng 2: Người dùng phải gửi đủ 3 luận điểm (3 tin nhắn riêng biệt)
@@ -253,21 +246,16 @@ Dựa vào Motion, bạn hãy mở màn cuộc tranh luận bằng cách đưa r
 📌 ĐỐI THỦ: Bên ${userSide} - ${userSideAction} Motion (NGƯỜI DÙNG đã đưa ra lập luận trước).
 
 🔥 NHIỆM VỤ VÒNG 1 - PHÁT BIỂU MỞ ĐẦU (AI PHẢN HỒI SAU):
-Dựa vào Motion và lập luận của User, đưa ra các lập luận phản đối Motion một cách sắc bén.
+Đưa ra phát biểu mở đầu ngắn gọn, súc tích để tuyên bố lập trường ${aiSideAction} Motion.
 
 📋 YÊU CẦU NỘI DUNG:
-1. **Lập luận sắc bén**: Đưa ra các lập luận hợp lý để bảo vệ quan điểm phản đối.
-2. **Xác định thuật ngữ**: Xác định và làm rõ các thuật ngữ chính trong Motion nếu cần.
-3. **Tóm tắt điểm chính**: Tóm tắt ngắn gọn những điểm chính của bạn.
-4. **Chuẩn bị cho Vòng 2**: Những lập luận này phải phù hợp để có thể triển khai thành 3 LUẬN ĐIỂM CHÍNH (3 Pillars) ở vòng tiếp theo.
+1. **Lập trường rõ ràng**: Tuyên bố ngắn gọn lập trường ${aiSideAction} Motion.
+2. **1-2 luận điểm cốt lõi**: Chỉ nêu 1-2 lý do chính, KHÔNG giải thích dài dòng.
+3. **Định nghĩa thuật ngữ** (nếu cần): Một câu ngắn làm rõ khái niệm chính.
 
-⚡ CHIẾN THUẬT TÂM LÝ:
-- Khuyến khích sự bất đồng thực sự (Genuine Disagreement).
-- Không tỏ ra quá lịch sự hay nhượng bộ giả tạo. Trực diện và thẳng thắn.
-
-❓ KỸ THUẬT ĐẶT CÂU HỎI:
-- **TUYỆT ĐỐI KHÔNG** đưa ra Leading Questions (câu hỏi dẫn dắt khiến người dùng dễ dàng đồng ý).
-- **HÃY ĐẶT** Challenging Questions (câu hỏi thách thức): Câu hỏi khiến người dùng phải khựng lại để suy nghĩ và chất vấn lại niềm tin của chính họ.`;
+⚡ PHONG CÁCH:
+- Ngắn gọn, trực diện, thẳng thắn.
+- KHÔNG đặt câu hỏi, KHÔNG kêu gọi phản hồi.`;
         } else if (currentRound === 2) {
           systemPrompt = `Bạn là chuyên gia tranh luận chuyên nghiệp trong cuộc "ESCAPE AI DEBATE".
 🎯 MOTION (CHỦ ĐỀ): "${motion}"
@@ -282,29 +270,37 @@ YÊU CẦU LOGIC:
 2. **Cấu trúc A-R-E-L**: Mỗi luận điểm phải tuân thủ:
    - **Assertion (Khẳng định)**: Khẳng định rõ ý chính.
    - **Reasoning (Lý lẽ)**: Phân tích logic tại sao luận điểm đó đúng.
-   - **Evidence (Bằng chứng - QUAN TRỌNG)**: Bắt buộc trích dẫn số liệu cụ thể, báo cáo, nghiên cứu từ các nguồn uy tín (như Pew Research, World Bank, Statista, Nature, v.v.).
+   - **Evidence (Bằng chứng - QUAN TRỌNG)**: Trích dẫn số liệu cụ thể, báo cáo, nghiên cứu từ nguồn uy tín. PHẢI điền đầy đủ: evidence_text (nội dung bằng chứng), evidence_source (tên tổ chức/tạp chí công bố, ví dụ: "Pew Research Center", "World Bank", "Nature", "McKinsey & Company"), evidence_year (năm công bố, ví dụ: "2023"), evidence_query (cụm từ tiếng Anh để tìm kiếm báo cáo này trên Google Scholar, ngắn gọn 5-8 từ, ví dụ: "AI automation jobs displacement 2023 McKinsey").
    - **Link (Tiểu kết)**: Kết nối luận điểm trở lại với chủ đề Debate.
 
-ĐỊNH DẠNG OUTPUT (JSON):
-Bạn KHÔNG trả về text thường. Bạn bắt buộc trả về JSON Object chứa mảng 3 luận điểm riêng biệt để hệ thống hiển thị thành 3 hộp chat khác nhau:
+ĐỊNH DẠNG OUTPUT (JSON - TUÂN THỦ TUYỆT ĐỐI):
 {
   "arguments": [
     {
       "assertion": "Luận điểm 1: ...",
       "reasoning": "...",
-      "evidence": "...",
-      "link": "..."
+      "evidence_text": "Nội dung bằng chứng, số liệu cụ thể...",
+      "evidence_source": "Tên tổ chức/tạp chí uy tín",
+      "evidence_year": "Năm",
+      "evidence_query": "cụm từ tìm kiếm tiếng Anh ngắn gọn",
+      "link": "Tiểu kết..."
     },
     {
       "assertion": "Luận điểm 2: ...",
       "reasoning": "...",
-      "evidence": "...",
+      "evidence_text": "...",
+      "evidence_source": "...",
+      "evidence_year": "...",
+      "evidence_query": "...",
       "link": "..."
     },
     {
       "assertion": "Luận điểm 3: ...",
       "reasoning": "...",
-      "evidence": "...",
+      "evidence_text": "...",
+      "evidence_source": "...",
+      "evidence_year": "...",
+      "evidence_query": "...",
       "link": "..."
     }
   ]
@@ -393,14 +389,25 @@ YÊU CẦU THÁI ĐỘ:
           }
         }
         // Xử lý response đặc biệt cho Round 2 (Trả về 3 tin nhắn: Arguments)
+        // 2-STEP: Step 1 = AI sinh luận điểm, Step 2 = resolve link thực từ Semantic Scholar / CrossRef
         else if (currentRound === 2) {
           const jsonContent = JSON.parse(response.choices[0].message.content || "{\"arguments\": []}");
           const args = jsonContent.arguments || ["Tôi có lỗi khi tạo lập luận."];
 
           for (const arg of args) {
-            let content = arg;
+            let content = typeof arg === 'string' ? arg : '';
             if (typeof arg === 'object' && arg !== null) {
-              content = `**Khẳng định:** ${arg.assertion}\n\n**Lý lẽ:** ${arg.reasoning}\n\n**Bằng chứng:** ${arg.evidence}\n\n**Tiểu kết:** ${arg.link}`;
+              // STEP 2: Resolve link thực từ API học thuật
+              const searchQuery = arg.evidence_query ||
+                `${arg.evidence_source || ''} ${arg.evidence_year || ''}`.trim() ||
+                arg.assertion || '';
+              const resolved = await resolveEvidenceUrl(
+                searchQuery,
+                arg.evidence_source || '',
+                arg.evidence_year || ''
+              );
+              console.log(`[Round2 Evidence] query="${searchQuery}" → source=${resolved.source} url=${resolved.directUrl}`);
+              content = buildArgumentContent(arg as Record<string, string>, resolved);
             }
 
             aiMessage = await storage.createMessage({
@@ -449,29 +456,37 @@ YÊU CẦU LOGIC:
 2. **Cấu trúc A-R-E-L**: Mỗi luận điểm phải tuân thủ:
    - **Assertion (Khẳng định)**: Khẳng định rõ ý chính.
    - **Reasoning (Lý lẽ)**: Phân tích logic tại sao luận điểm đó đúng.
-   - **Evidence (Bằng chứng - BẮT BUỘC)**: Trích dẫn số liệu, báo cáo, nghiên cứu từ các nguồn uy tín (như Pew Research, Research Gate, Statista, các trang báo lớn, hoặc bài nghiên cứu khoa học) và dẫn nguồn bài viết đó (link ref).
+   - **Evidence (Bằng chứng - BẮT BUỘC)**: Trích dẫn số liệu, báo cáo, nghiên cứu từ nguồn uy tín. PHẢI điền đầy đủ: evidence_text (nội dung bằng chứng), evidence_source (tên tổ chức/tạp chí công bố, ví dụ: "Pew Research Center", "World Bank", "Nature", "McKinsey & Company"), evidence_year (năm công bố, ví dụ: "2023"), evidence_query (cụm từ tiếng Anh để tìm kiếm báo cáo này trên Google Scholar, ngắn gọn 5-8 từ, ví dụ: "AI automation jobs displacement 2023 McKinsey").
    - **Link (Tiểu kết)**: Loại bỏ sự lặp lại; Kiểm tra luồng logic giữa các điểm. Đảm bảo mỗi luận điểm đều liên quan trực tiếp đến đề bài.
 
-ĐỊNH DẠNG OUTPUT (JSON):
-Bạn KHÔNG trả về text thường. Bạn bắt buộc trả về JSON Object chứa mảng 3 luận điểm riêng biệt để hệ thống hiển thị thành 3 hộp chat khác nhau:
+ĐỊNH DẠNG OUTPUT (JSON - TUÂN THỦ TUYỆT ĐỐI):
 {
   "arguments": [
     {
       "assertion": "Luận điểm 1: ...",
       "reasoning": "...",
-      "evidence": "...",
-      "link": "..."
+      "evidence_text": "Nội dung bằng chứng, số liệu cụ thể...",
+      "evidence_source": "Tên tổ chức/tạp chí uy tín",
+      "evidence_year": "Năm",
+      "evidence_query": "cụm từ tìm kiếm tiếng Anh ngắn gọn",
+      "link": "Tiểu kết..."
     },
     {
       "assertion": "Luận điểm 2: ...",
       "reasoning": "...",
-      "evidence": "...",
+      "evidence_text": "...",
+      "evidence_source": "...",
+      "evidence_year": "...",
+      "evidence_query": "...",
       "link": "..."
     },
     {
       "assertion": "Luận điểm 3: ...",
       "reasoning": "...",
-      "evidence": "...",
+      "evidence_text": "...",
+      "evidence_source": "...",
+      "evidence_year": "...",
+      "evidence_query": "...",
       "link": "..."
     }
   ]
@@ -527,14 +542,25 @@ YÊU CẦU THÁI ĐỘ:
           });
 
           // Xử lý response đặc biệt cho Round 2 (Trả về 3 tin nhắn: Arguments)
+          // 2-STEP: Step 1 = AI sinh luận điểm, Step 2 = resolve link thực từ Semantic Scholar / CrossRef
           if (nextRound === 2) {
             const jsonContent = JSON.parse(response.choices[0].message.content || "{\"arguments\": []}");
             const args = jsonContent.arguments || ["Tôi có lỗi khi tạo lập luận."];
 
             for (const arg of args) {
-              let content = arg;
+              let content = typeof arg === 'string' ? arg : '';
               if (typeof arg === 'object' && arg !== null) {
-                content = `**Khẳng định:** ${arg.assertion}\n\n**Lý lẽ:** ${arg.reasoning}\n\n**Bằng chứng:** ${arg.evidence}\n\n**Tiểu kết:** ${arg.link}`;
+                // STEP 2: Resolve link thực từ API học thuật
+                const searchQuery = arg.evidence_query ||
+                  `${arg.evidence_source || ''} ${arg.evidence_year || ''}`.trim() ||
+                  arg.assertion || '';
+                const resolved = await resolveEvidenceUrl(
+                  searchQuery,
+                  arg.evidence_source || '',
+                  arg.evidence_year || ''
+                );
+                console.log(`[Round2 Evidence] query="${searchQuery}" → source=${resolved.source} url=${resolved.directUrl}`);
+                content = buildArgumentContent(arg as Record<string, string>, resolved);
               }
 
               aiMessage = await storage.createMessage({
@@ -589,6 +615,141 @@ YÊU CẦU THÁI ĐỘ:
   return httpServer;
 }
 
+// ==================================================================================
+// 2-STEP EVIDENCE RESOLVER
+// Step 1: Semantic Scholar API (tìm paper thực tế, lấy URL trực tiếp)
+// Step 2: CrossRef API (fallback)
+// Step 3: Google Scholar search (fallback cuối)
+// ==================================================================================
+interface ResolvedEvidence {
+  directUrl: string;        // URL click vào bài luôn
+  scholarSearchUrl: string; // URL Google Scholar search (backup)
+  googleSearchUrl: string;  // URL Google Search (backup)
+  source: 'semantic_scholar' | 'crossref' | 'fallback';
+  paperTitle?: string;      // Tiêu đề bài báo thực tế (nếu tìm được)
+  paperYear?: string;
+}
+
+async function resolveEvidenceUrl(
+  query: string,
+  sourceName: string = '',
+  year: string = ''
+): Promise<ResolvedEvidence> {
+  const encodedQuery = encodeURIComponent(query);
+  const scholarSearchUrl = `https://scholar.google.com/scholar?q=${encodedQuery}`;
+  const googleSearchUrl = `https://www.google.com/search?q=${encodedQuery}`;
+
+  // --- STEP 1: Semantic Scholar API ---
+  try {
+    const ssUrl = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodedQuery}&fields=title,year,externalIds,openAccessPdf,url&limit=3`;
+    const ssRes = await fetch(ssUrl, {
+      headers: { 'User-Agent': 'EscapeDebate/1.0' },
+      signal: AbortSignal.timeout(4000)
+    });
+    if (ssRes.ok) {
+      const ssData = await ssRes.json() as {
+        data?: Array<{
+          title: string;
+          year?: number;
+          url?: string;
+          openAccessPdf?: { url: string };
+          externalIds?: { DOI?: string; ArXiv?: string };
+        }>;
+      };
+      const papers = ssData.data || [];
+      // Ưu tiên paper có openAccessPdf (đọc miễn phí được)
+      const best = papers.find(p => p.openAccessPdf?.url) || papers[0];
+      if (best) {
+        const directUrl =
+          best.openAccessPdf?.url ||
+          (best.externalIds?.DOI ? `https://doi.org/${best.externalIds.DOI}` : null) ||
+          best.url ||
+          scholarSearchUrl;
+        return {
+          directUrl,
+          scholarSearchUrl,
+          googleSearchUrl,
+          source: 'semantic_scholar',
+          paperTitle: best.title,
+          paperYear: best.year?.toString()
+        };
+      }
+    }
+  } catch (e) {
+    console.warn('[resolveEvidenceUrl] Semantic Scholar failed:', (e as Error).message);
+  }
+
+  // --- STEP 2: CrossRef API ---
+  try {
+    const crQuery = year ? `${query} ${year}` : query;
+    const crUrl = `https://api.crossref.org/works?query=${encodeURIComponent(crQuery)}&rows=3&select=title,published,DOI,URL`;
+    const crRes = await fetch(crUrl, {
+      headers: { 'User-Agent': 'EscapeDebate/1.0 (mailto:admin@escapedebate.com)' },
+      signal: AbortSignal.timeout(4000)
+    });
+    if (crRes.ok) {
+      const crData = await crRes.json() as {
+        message?: {
+          items?: Array<{
+            title?: string[];
+            DOI?: string;
+            URL?: string;
+            published?: { 'date-parts'?: number[][] };
+          }>;
+        };
+      };
+      const items = crData.message?.items || [];
+      const best = items[0];
+      if (best?.DOI) {
+        const doiUrl = `https://doi.org/${best.DOI}`;
+        const publishedYear = best.published?.['date-parts']?.[0]?.[0]?.toString();
+        return {
+          directUrl: doiUrl,
+          scholarSearchUrl,
+          googleSearchUrl,
+          source: 'crossref',
+          paperTitle: best.title?.[0],
+          paperYear: publishedYear
+        };
+      }
+    }
+  } catch (e) {
+    console.warn('[resolveEvidenceUrl] CrossRef failed:', (e as Error).message);
+  }
+
+  // --- STEP 3: Fallback ---
+  return {
+    directUrl: scholarSearchUrl,
+    scholarSearchUrl,
+    googleSearchUrl,
+    source: 'fallback'
+  };
+}
+
+// Tạo nội dung markdown cho 1 luận điểm AREL có link đã resolve
+function buildArgumentContent(arg: Record<string, string>, resolved: ResolvedEvidence): string {
+  const evidenceText = arg.evidence_text || arg.evidence || '';
+  const sourceName = arg.evidence_source || '';
+  const year = resolved.paperYear || arg.evidence_year || '';
+
+  let sourceBlock = '';
+  if (resolved.source !== 'fallback' && resolved.paperTitle) {
+    // Tìm được bài thực → hiển thị tiêu đề bài và link trực tiếp
+    const yearStr = year ? ` (${year})` : '';
+    sourceBlock = `*Nguồn: **${sourceName}**${yearStr}*\n📄 **Bài báo:** [${resolved.paperTitle.length > 80 ? resolved.paperTitle.slice(0, 80) + '…' : resolved.paperTitle}](${resolved.directUrl})`;
+  } else {
+    // Fallback → hiển thị link tìm kiếm
+    const yearStr = year ? ` (${year})` : '';
+    sourceBlock = `*Nguồn: **${sourceName}**${yearStr}*`;
+  }
+
+  const linkLine = resolved.source !== 'fallback'
+    ? `🔗 **Xem bài gốc:** [Mở bài báo trực tiếp](${resolved.directUrl}) · [Tìm thêm trên Scholar](${resolved.scholarSearchUrl})`
+    : `🔗 **Kiểm chứng nguồn:** [Tìm trên Google Scholar](${resolved.scholarSearchUrl}) · [Tìm trên Google](${resolved.googleSearchUrl})`;
+
+  return `**🔷 Khẳng định:** ${arg.assertion}\n\n**💡 Lý lẽ:** ${arg.reasoning}\n\n**📊 Bằng chứng:** ${evidenceText}\n${sourceBlock}\n\n${linkLine}\n\n**⚡ Tiểu kết:** ${arg.link}`;
+}
+
 // Helper function outside request handler
 async function generateModeratorSummary(
   debateId: number, currentRound: number,
@@ -641,7 +802,7 @@ ${currentRound === 2 ? `
 
 2️⃣ **CHỈ DẪN NÂNG CẤP (The Escalation)**
 - **Nội dung**: BẮT BUỘC trả về CHÍNH XÁC đoạn văn sau làm transition:
-  "Kết thúc phần trình bày bề nổi, chúng ta tiến vào Vòng 3 (Vòng 3: Chất vấn - Đặt câu hỏi cho nhau). Đây là lúc cho những câu hỏi và thách thức nảy lửa! Bạn đã chuẩn bị thương thuyết cho các lập luận mạnh mẽ và sẵn sàng để phản biện đối thủ của mình chưa? Hãy sẵn sàng cho những cuộc khẩu chiến căng thẳng phía trước!"
+  "Kết thúc phần trình bày bề nổi, chúng ta tiến vào Vòng 3 (Vòng 3: Đặt câu hỏi phản biện). Đây là lúc cho những câu hỏi và thách thức nảy lửa! Bạn đã chuẩn bị thương thuyết cho các lập luận mạnh mẽ và sẵn sàng để phản biện đối thủ của mình chưa? Hãy sẵn sàng cho những cuộc khẩu chiến căng thẳng phía trước!"
 ` : currentRound === 3 ? `
 1️⃣ **NỘI DUNG TÓM TẮT DÀNH CHO VÒNG 3**
 - **Yêu cầu**: KHÔNG viết thành một đoạn văn dài dính liền. Bắt buộc chia thành 2 phần rõ rệt với tiêu đề.

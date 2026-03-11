@@ -1,15 +1,11 @@
-import { useState, ReactNode } from "react";
+import { useState } from "react";
 import { useDebates, useDeleteDebate, useRateDebate } from "@/hooks/use-debates";
 import { Link } from "wouter";
-import { Trash2, Star, X, Clock } from "lucide-react";
+import { Trash2, Star, X, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
 
-interface DebateHistoryProps {
-  centerContent?: ReactNode;
-}
-
-export function DebateHistory({ centerContent }: DebateHistoryProps) {
+export function DebateHistory() {
   const { data: debates, isLoading } = useDebates();
   const deleteDebate = useDeleteDebate();
   const rateDebate = useRateDebate();
@@ -19,9 +15,8 @@ export function DebateHistory({ centerContent }: DebateHistoryProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleDelete = (e: React.MouseEvent, debateId: number, topic: string) => {
-    e.preventDefault(); 
+    e.preventDefault();
     e.stopPropagation();
-
     if (window.confirm(`Bạn có chắc muốn xóa cuộc tranh luận "${topic}"?`)) {
       deleteDebate.mutate(debateId);
     }
@@ -30,39 +25,47 @@ export function DebateHistory({ centerContent }: DebateHistoryProps) {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-48 w-full">
-        <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
-  const sortedDebates = debates 
+  const sortedDebates = debates
     ? [...debates].sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime())
     : [];
 
-  const maxInitial = 6;
-  const initialLeft = sortedDebates.slice(0, 3);
-  const initialRight = sortedDebates.slice(3, 6);
+  const maxInitial = 5;
+  const visibleDebates = isExpanded ? sortedDebates : sortedDebates.slice(0, maxInitial);
 
-  const extraDebates = isExpanded ? sortedDebates.slice(6) : [];
-  
-  const leftDebates = [...initialLeft, ...extraDebates.filter((_, i) => i % 3 === 0)];
-  const centerDebates = extraDebates.filter((_, i) => i % 3 === 1);
-  const rightDebates = [...initialRight, ...extraDebates.filter((_, i) => i % 3 === 2)];
-
-  const renderDebateItem = (debate: any) => (
-    <div key={debate.id} className="relative group w-full max-w-sm mx-auto mb-4">
+  const renderRow = (debate: any) => (
+    <div key={debate.id} className="relative group">
       <Link href={`/debate/${debate.id}`}>
-        <div className="cyber-key w-full h-[5.5rem]">
-          <div className="cyber-key-top !flex-row !justify-between !inset-[5px_6px_12px_6px] px-4">
-            {/* Status Label */}
+        <div className="flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-pink-50 hover:bg-pink-100 border border-pink-100 hover:border-pink-200 transition-all duration-150 cursor-pointer">
+
+          {/* Icon */}
+          <div className="w-9 h-9 shrink-0 rounded-full bg-pink-50 border border-pink-100 flex items-center justify-center">
+            <svg className="w-4 h-4 text-[#E91E63]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+
+          {/* Topic */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-slate-700 truncate normal-case">
+              {debate.topic}
+            </p>
+          </div>
+
+          {/* Status Badge */}
+          <div className="shrink-0 flex items-center gap-3">
             {debate.current_round < 5 ? (
-              <div className="absolute -top-3 left-4 bg-slate-800 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow z-10">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
                 Chưa xong
-              </div>
+              </span>
             ) : debate.rating ? (
-              <div className="absolute -top-3 left-4 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow flex items-center gap-0.5 z-10">
-                {debate.rating} <Star className="w-2.5 h-2.5 fill-white" />
-              </div>
+              <span className="text-[10px] font-black text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                {debate.rating}<Star className="w-2.5 h-2.5 fill-orange-400" />
+              </span>
             ) : (
               <button
                 onClick={(e) => {
@@ -72,30 +75,23 @@ export function DebateHistory({ centerContent }: DebateHistoryProps) {
                   setRating(0);
                   setHoverStar(0);
                 }}
-                className="absolute -top-3 left-4 bg-[#E91E63] text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow z-20 hover:scale-105 transition-transform"
+                className="text-[10px] font-black uppercase tracking-widest text-[#E91E63] bg-pink-50 hover:bg-pink-100 px-2 py-0.5 rounded-full transition-colors z-20"
               >
                 Đánh giá
               </button>
             )}
 
-            <div className="flex items-center gap-3 flex-1 min-w-0 pr-4">
-              <div className="w-8 h-8 shrink-0 rounded-full border border-slate-300 flex items-center justify-center bg-white/50 shadow-inner">
-                <Clock className="w-4 h-4 text-slate-400" />
-              </div>
-              <div className="text-xs md:text-sm font-bold text-slate-700 leading-snug line-clamp-2 text-left normal-case">
-                {debate.topic}
-              </div>
-            </div>
-
-            {/* Delete action visible on hover */}
+            {/* Delete - hover only */}
             <button
               onClick={(e) => handleDelete(e, debate.id, debate.topic)}
               disabled={deleteDebate.isPending}
-              className="opacity-0 group-hover:opacity-100 absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-red-100/90 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all disabled:opacity-50 z-10 shadow-sm"
-              title="Xóa cuộc tranh luận"
+              className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-full bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
+              title="Xóa"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
+
+            <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
           </div>
         </div>
       </Link>
@@ -104,42 +100,31 @@ export function DebateHistory({ centerContent }: DebateHistoryProps) {
 
   return (
     <div className="relative w-full">
-      <div className="flex flex-col md:flex-row items-start justify-between gap-6 md:gap-4 lg:gap-8 w-full">
-        
-        {/* Left Column */}
-        <div className="w-full md:w-1/3 flex flex-col gap-6 items-center md:items-end md:pt-6">
-          {leftDebates.length > 0 ? (
-            leftDebates.map(renderDebateItem)
-          ) : (
-             <div className="text-white/60 text-sm italic w-full max-w-sm text-center md:text-right pt-4">Chưa có tranh luận...</div>
-          )}
-        </div>
-
-        {/* Center Main Action */}
-        <div className="w-full md:w-1/3 flex flex-col gap-6 items-center justify-start z-10 relative mt-8 md:mt-0">
-          <div className="w-full mb-0 md:mt-2">
-            {centerContent}
+      {/* Inner white panel */}
+      <div className="bg-white rounded-[20px] border border-slate-100 p-4 md:p-6 min-h-[200px]">
+        {sortedDebates.length === 0 ? (
+          <div className="flex items-center justify-center h-40">
+            <span className="font-black uppercase tracking-[0.25em] text-slate-400 text-base">
+              CHƯA CÓ LỊCH SỬ
+            </span>
           </div>
-          {centerDebates.length > 0 && centerDebates.map(renderDebateItem)}
-        </div>
-
-        {/* Right Column */}
-        <div className="w-full md:w-1/3 flex flex-col gap-6 items-center md:items-start md:pt-14">
-           {rightDebates.length > 0 && rightDebates.map(renderDebateItem)}
-        </div>
-
+        ) : (
+          <div className="flex flex-col gap-2">
+            {visibleDebates.map(renderRow)}
+          </div>
+        )}
       </div>
 
-      {/* Expand/Collapse Button */}
+      {/* Expand/Collapse */}
       {sortedDebates.length > maxInitial && (
-        <div className="w-full flex justify-center mt-10 pb-2 relative z-20">
-          <button 
+        <div className="w-full h-8 flex items-center justify-center mt-3">
+          <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-2 text-white/80 hover:text-white font-bold text-xs md:text-sm tracking-widest uppercase transition-all group"
+            className="flex items-center gap-2 text-white/80 hover:text-white font-bold text-xs tracking-widest uppercase transition-all"
           >
             <span>{isExpanded ? "Thu gọn lịch sử" : "Xem tất cả lịch sử"}</span>
-            <svg 
-              className={clsx("w-4 h-4 transition-transform duration-300", isExpanded ? "rotate-180" : "rotate-0")} 
+            <svg
+              className={clsx("w-4 h-4 transition-transform duration-300", isExpanded ? "rotate-180" : "rotate-0")}
               fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -148,7 +133,7 @@ export function DebateHistory({ centerContent }: DebateHistoryProps) {
         </div>
       )}
 
-      {/* Popup Đánh giá ngoài Homepage */}
+      {/* Rating Popup */}
       <AnimatePresence>
         {ratingDebateId && (
           <motion.div
@@ -186,7 +171,6 @@ export function DebateHistory({ centerContent }: DebateHistoryProps) {
                   <p className="text-center text-slate-500 mb-8 font-medium text-sm px-2">
                     Nhấp vào một ngôi sao để đánh giá trên hệ thống của ESCAPE.
                   </p>
-
                   <div className="flex justify-center gap-2 mb-8" onMouseLeave={() => setHoverStar(0)}>
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
