@@ -114,7 +114,7 @@ export default function DebateSession() {
   }, [messages]);
 
   const MIN_WORDS = 50;
-  const MAX_WORDS = 150;
+  const MAX_WORDS = 300;
 
   const wordCount = input.trim() === '' ? 0 : input.trim().split(/\s+/).length;
   const isWordCountValid = wordCount >= MIN_WORDS && wordCount <= MAX_WORDS;
@@ -167,7 +167,7 @@ export default function DebateSession() {
 
   // Placeholder text thay đổi theo vòng
   const getPlaceholder = (round: number) => {
-    if (round === 1) return "Nhập phát biểu mở đầu của bạn (150-200 từ)...";
+    if (round === 1) return "Nhập phát biểu mở đầu của bạn (50-300 từ)...";
     if (round === 2) {
       if (userMessagesInActiveRoundCount === 0) return "Nhập lập luận 1/3 kèm bằng chứng...";
       if (userMessagesInActiveRoundCount === 1) return "Nhập lập luận 2/3 kèm bằng chứng...";
@@ -180,8 +180,10 @@ export default function DebateSession() {
         if (userMessagesInActiveRoundCount === 0) return "Đặt câu hỏi phản biện cho đối phương...";
         if (userMessagesInActiveRoundCount === 1) return "Trả lời câu hỏi mà AI đặt ra cho bạn...";
       }
-      // Scenario B (user = Phản đối/Phủ định): chỉ 1 lượt (trả lời + hỏi ngược)
-      return "Trả lời câu hỏi của AI và đặt câu hỏi phản biện...";
+      // Scenario B (user = Phản đối/Phủ định): 2 lượt riêng (trả lời, rồi hỏi)
+      if (userMessagesInActiveRoundCount === 0) return "Trả lời câu hỏi của AI...";
+      if (userMessagesInActiveRoundCount === 1) return "Đặt câu hỏi phản biện cho AI...";
+      return "Đang chờ máy phản hồi...";
     }
     if (round === 4) return "Đưa ra Tuyên bố Kết luận cuối cùng...";
     return "Nhập tin nhắn...";
@@ -336,7 +338,7 @@ export default function DebateSession() {
           </h2>
 
           <p className="text-slate-500 mt-2 font-medium">
-            {selectedRound === 1 ? "Phát biểu mở đầu (150-200 từ)" :
+            {selectedRound === 1 ? "Phát biểu mở đầu (50-300 từ)" :
               selectedRound === 2 ? "Triển khai 3 lập luận chính kèm bằng chứng" :
                 selectedRound === 3 ? "Đặt câu hỏi phản biện" :
                   selectedRound === 4 ? "Tuyên bố Kết luận cuối cùng" : ""}
@@ -431,7 +433,8 @@ export default function DebateSession() {
           {/* Loading State - hiện khi đang ở đúng vòng active và AI đang xử lý */}
           {sendMessage.isPending && selectedRound === activeRound &&
             (activeRound !== 2 || userMessagesInActiveRoundCount >= 3) &&
-            (activeRound !== 3 || debate.side !== 'support' || userMessagesInActiveRoundCount >= 1) && (
+            (activeRound !== 3 || debate.side !== 'support' || userMessagesInActiveRoundCount >= 1) &&
+            (activeRound !== 3 || debate.side !== 'oppose' || userMessagesInActiveRoundCount >= 2) && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -495,7 +498,8 @@ export default function DebateSession() {
                   }}
                   disabled={sendMessage.isPending &&
                     (activeRound !== 2 || userMessagesInActiveRoundCount >= 3) &&
-                    (activeRound !== 3 || debate.side !== 'support' || userMessagesInActiveRoundCount >= 1)
+                    (activeRound !== 3 || debate.side !== 'support' || userMessagesInActiveRoundCount >= 1) &&
+                    (activeRound !== 3 || debate.side !== 'oppose' || userMessagesInActiveRoundCount >= 2)
                   }
                   rows={1}
                   className="w-full bg-primary text-white placeholder:text-white/60 py-4 px-6 rounded-[28px] border-none shadow-lg focus:ring-4 focus:ring-primary/20 outline-none font-medium disabled:opacity-50 resize-none overflow-y-auto block min-h-[56px] leading-[24px] scrollbar-hide"
@@ -525,7 +529,8 @@ export default function DebateSession() {
                 disabled={!input.trim() || !isWordCountValid || (
                   sendMessage.isPending &&
                   (activeRound !== 2 || userMessagesInActiveRoundCount >= 3) &&
-                  (activeRound !== 3 || debate.side !== 'support' || userMessagesInActiveRoundCount >= 1)
+                  (activeRound !== 3 || debate.side !== 'support' || userMessagesInActiveRoundCount >= 1) &&
+                  (activeRound !== 3 || debate.side !== 'oppose' || userMessagesInActiveRoundCount >= 2)
                 )}
                 className="bg-primary hover:bg-[#C2185B] text-white px-8 rounded-full font-bold uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-95 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none h-[56px] shrink-0"
               >
