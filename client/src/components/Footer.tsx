@@ -48,7 +48,7 @@ export function Footer() {
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center text-left">
                       <p className="text-[10px] text-white/60 font-black uppercase tracking-widest leading-none mb-1">Facebook</p>
-                      <p className="text-sm font-bold text-white truncate normal-case">ESCAPE - Press Escape Shape Your Mind</p>
+                      <p className="text-sm font-bold text-white truncate normal-case">ESCAPE - Press Escape, Shape Your Mind</p>
                     </div>
                   </div>
                 </a>
@@ -85,7 +85,7 @@ export function Footer() {
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center text-left">
                       <p className="text-[10px] text-white/60 font-black uppercase tracking-widest leading-none mb-1">Số điện thoại</p>
-                      <p className="text-sm font-bold text-white truncate normal-case">0359391555 - Đặng Việt Tùng</p>
+                      <p className="text-sm font-bold text-white truncate normal-case">0359391555 - Đặng Viết Tùng</p>
                     </div>
                   </div>
                 </div>

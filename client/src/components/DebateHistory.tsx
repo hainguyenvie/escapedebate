@@ -40,10 +40,10 @@ export function DebateHistory() {
   const renderRow = (debate: any) => (
     <div key={debate.id} className="relative group">
       <Link href={`/debate/${debate.id}`}>
-        <div className="flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-pink-50 hover:bg-pink-100 border border-pink-100 hover:border-pink-200 transition-all duration-150 cursor-pointer">
+        <div className="flex items-center gap-2 md:gap-4 px-3 md:px-4 py-3 rounded-2xl bg-pink-50 hover:bg-pink-100 border border-pink-100 hover:border-pink-200 transition-all duration-150 cursor-pointer">
 
           {/* Icon */}
-          <div className="w-9 h-9 shrink-0 rounded-full bg-pink-50 border border-pink-100 flex items-center justify-center">
+          <div className="w-8 h-8 md:w-9 md:h-9 shrink-0 rounded-full bg-pink-50 border border-pink-100 flex items-center justify-center">
             <svg className="w-4 h-4 text-[#E91E63]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -57,7 +57,7 @@ export function DebateHistory() {
           </div>
 
           {/* Status Badge */}
-          <div className="shrink-0 flex items-center gap-3">
+          <div className="shrink-0 flex items-center gap-1.5 md:gap-3">
             {debate.current_round < 5 ? (
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
                 Chưa xong
@@ -101,7 +101,7 @@ export function DebateHistory() {
   return (
     <div className="relative w-full">
       {/* Inner white panel */}
-      <div className="bg-white rounded-[20px] border border-slate-100 p-4 md:p-6 min-h-[200px]">
+      <div className="bg-white rounded-[20px] border border-slate-100 p-2.5 md:p-6 min-h-[160px]">
         {sortedDebates.length === 0 ? (
           <div className="flex items-center justify-center h-40">
             <span className="font-black uppercase tracking-[0.25em] text-slate-400 text-base">

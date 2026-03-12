@@ -238,6 +238,15 @@ LƯU Ý: Tuyệt đối từ chối các nội dung CHÍNH TRỊ dù ở bất k
         return res.status(201).json(savedUserMessage);
       }
 
+      // Vòng 3 - Scenario B (User = Phản đối/Phủ định):
+      // Lượt 1: AI mở vòng bằng câu hỏi
+      // Lượt 2: User trả lời câu hỏi → chỉ lưu, chờ lượt tiếp
+      // Lượt 3: User đặt câu hỏi ngược → AI trả lời → kết thúc vòng
+      if (currentRound === 3 && debate.side === 'oppose' && userMessagesInCurrentRound === 1) {
+        // User đã trả lời câu hỏi của AI, chờ user đặt câu hỏi ngược
+        return res.status(201).json(savedUserMessage);
+      }
+
       // =================================================================================
       // LOGIC XỬ LÝ THEO PHE (SIDE)
       // =================================================================================
@@ -280,8 +289,15 @@ YÊU CẦU LOGIC:
 2. **Cấu trúc A-R-E-L**: Mỗi luận điểm phải tuân thủ:
    - **Assertion (Khẳng định)**: Khẳng định rõ ý chính.
    - **Reasoning (Lý lẽ)**: Phân tích logic tại sao luận điểm đó đúng.
-   - **Evidence (Bằng chứng - QUAN TRỌNG)**: Trích dẫn số liệu cụ thể, báo cáo, nghiên cứu từ nguồn uy tín. PHẢI điền đầy đủ: evidence_text (nội dung bằng chứng), evidence_source (tên tổ chức/tạp chí công bố, ví dụ: "Pew Research Center", "World Bank", "Nature", "McKinsey & Company"), evidence_year (năm công bố, ví dụ: "2023"), evidence_query (cụm từ tiếng Anh để tìm kiếm báo cáo này trên Google Scholar, ngắn gọn 5-8 từ, ví dụ: "AI automation jobs displacement 2023 McKinsey").
+   - **Evidence (Bằng chứng)**: Mô tả loại bằng chứng cần thiết (số liệu, nghiên cứu, báo cáo).
+   - **search_keywords**: TỪ KHÓA TÌM KIẾM bằng tiếng Anh (3-6 từ) để hệ thống tự động tìm paper thật. Ví dụ: "climate change economic impact 2023", "AI job displacement statistics", "remote work productivity study".
    - **Link (Tiểu kết)**: Kết nối luận điểm trở lại với chủ đề Debate.
+
+⚠️ QUAN TRỌNG - TRÁNH ẢO GIÁC CITATION:
+- KHÔNG được bịa ra tên nguồn cụ thể như "Nghiên cứu của Harvard 2024" hay "Báo cáo McKinsey 2023" nếu bạn không chắc chắn.
+- Hãy mô tả bằng chứng bạn CẦN, hệ thống sẽ tự tìm paper thật tương ứng.
+- Ví dụ đúng: "Các nghiên cứu về tác động của AI đến thị trường lao động" + keywords: "AI labor market impact"
+- Ví dụ sai: "Theo báo cáo của McKinsey 2023, AI sẽ thay thế 800 triệu việc làm" (có thể không tồn tại)
 
 ĐỊNH DẠNG OUTPUT (JSON - TUÂN THỦ TUYỆT ĐỐI):
 {
@@ -289,28 +305,22 @@ YÊU CẦU LOGIC:
     {
       "assertion": "Luận điểm 1: ...",
       "reasoning": "...",
-      "evidence_text": "Nội dung bằng chứng, số liệu cụ thể...",
-      "evidence_source": "Tên tổ chức/tạp chí uy tín",
-      "evidence_year": "Năm",
-      "evidence_query": "cụm từ tìm kiếm tiếng Anh ngắn gọn",
+      "evidence_text": "Mô tả bằng chứng cần thiết (số liệu, loại nghiên cứu)...",
+      "search_keywords": "english keywords for paper search",
       "link": "Tiểu kết..."
     },
     {
       "assertion": "Luận điểm 2: ...",
       "reasoning": "...",
       "evidence_text": "...",
-      "evidence_source": "...",
-      "evidence_year": "...",
-      "evidence_query": "...",
+      "search_keywords": "...",
       "link": "..."
     },
     {
       "assertion": "Luận điểm 3: ...",
       "reasoning": "...",
       "evidence_text": "...",
-      "evidence_source": "...",
-      "evidence_year": "...",
-      "evidence_query": "...",
+      "search_keywords": "...",
       "link": "..."
     }
   ]
@@ -404,7 +414,7 @@ YÊU CẦU THÁI ĐỘ:
           return res.status(201).json(aiMessage);
         }
         // Xử lý response đặc biệt cho Round 2 (Trả về 3 tin nhắn: Arguments)
-        // 2-STEP: Step 1 = AI sinh luận điểm, Step 2 = resolve link thực từ Semantic Scholar / CrossRef
+        // NEW FLOW: AI generates keywords → System searches REAL papers → Use real data
         else if (currentRound === 2) {
           const jsonContent = JSON.parse(response.choices[0].message.content || "{\"arguments\": []}");
           const args = jsonContent.arguments || ["Tôi có lỗi khi tạo lập luận."];
@@ -412,16 +422,22 @@ YÊU CẦU THÁI ĐỘ:
           for (const arg of args) {
             let content = typeof arg === 'string' ? arg : '';
             if (typeof arg === 'object' && arg !== null) {
-              // STEP 2: Resolve link thực từ API học thuật
-              const searchQuery = arg.evidence_query ||
-                `${arg.evidence_source || ''} ${arg.evidence_year || ''}`.trim() ||
-                arg.assertion || '';
-              const resolved = await resolveEvidenceUrl(
-                searchQuery,
-                arg.evidence_source || '',
-                arg.evidence_year || ''
-              );
-              console.log(`[Round2 Evidence] query="${searchQuery}" → source=${resolved.source} url=${resolved.directUrl}`);
+              // Use search_keywords (NEW) or fallback to evidence_query (OLD format)
+              const searchQuery = arg.search_keywords ||
+                                  arg.evidence_query ||
+                                  arg.assertion?.replace(/[^\w\s]/g, '').slice(0, 50) || '';
+
+              console.log(`[Round2] Searching for: "${searchQuery}"`);
+
+              // Search for REAL paper
+              const resolved = await resolveEvidenceUrl(searchQuery);
+
+              if (resolved.source !== 'fallback') {
+                console.log(`[Round2] ✓ Found paper: "${resolved.paperTitle}" (${resolved.paperYear})`);
+              } else {
+                console.log(`[Round2] ✗ No paper found, showing search links only`);
+              }
+
               content = buildArgumentContent(arg as Record<string, string>, resolved);
             }
 
@@ -448,15 +464,16 @@ YÊU CẦU THÁI ĐỘ:
         // SCENARIO B: USER LÀ PHẢN ĐỐI (OPPOSE), AI LÀ KHẲNG ĐỊNH
         // Vòng 3 Flow mới:
         //   - Lượt 1: AI mở vòng bằng câu hỏi (nextRound===3, xử lý ở bên dưới)
-        //   - Lượt 2: User trả lời câu hỏi AI + hỏi ngược lại (userMessagesInCurrentRound === 1)
+        //   - Lượt 2: User trả lời câu hỏi AI (userMessagesInCurrentRound === 1, return early ở trên)
+        //   - Lượt 3: User đặt câu hỏi ngược lại (userMessagesInCurrentRound === 2)
         //             → AI (Khẳng định) phải trả lời câu hỏi của user trước khi kết thúc vòng
         //   - Sau đó: Kết thúc vòng (tổng kết + mở vòng tiếp)
         //
         // Vòng khác: User nói xong → kết thúc vòng ngay
 
-        if (currentRound === 3 && userMessagesInCurrentRound === 1) {
-          // Lượt 2 của scenario B vòng 3:
-          // User vừa trả lời câu hỏi của AI đồng thời hỏi ngược lại AI
+        if (currentRound === 3 && userMessagesInCurrentRound === 2) {
+          // Lượt 3 của scenario B vòng 3:
+          // User đã trả lời câu hỏi ở lượt trước, giờ đặt câu hỏi ngược AI
           // AI (phe Khẳng định) phải trả lời câu hỏi đó trước khi kết thúc vòng
 
           const aiAnswerPrompt = `Bạn là chuyên gia tranh luận chuyên nghiệp trong cuộc "ESCAPE AI DEBATE".
@@ -464,7 +481,9 @@ YÊU CẦU THÁI ĐỘ:
 📌 VỊ TRÍ CỦA BẠN: Bên ${aiSide} - BẮT BUỘC ${aiSideAction} Motion.
 📌 ĐỐI THỦ: Bên ${userSide} - ${userSideAction} Motion.
 
-CONTEXT: Bạn đang ở Vòng 3 - Đặt câu hỏi phản biện. Người dùng (Phe ${userSide}) vừa trả lời câu hỏi bạn đặt ra trước đó, đồng thời đặt câu hỏi ngược lại bạn.
+CONTEXT: Bạn đang ở Vòng 3 - Đặt câu hỏi phản biện.
+- Ở lượt trước, Người dùng (Phe ${userSide}) đã trả lời câu hỏi bạn đặt ra.
+- Ở lượt này, Người dùng vừa đặt câu hỏi ngược lại bạn.
 Nhiệm vụ: Với tư cách phe ${aiSide} (Khẳng định), bạn phải TRẢ LỜI câu hỏi mà Người dùng vừa đặt ra cho bạn.
 
 YÊU CẦU:
@@ -562,8 +581,15 @@ YÊU CẦU LOGIC:
 2. **Cấu trúc A-R-E-L**: Mỗi luận điểm phải tuân thủ:
    - **Assertion (Khẳng định)**: Khẳng định rõ ý chính.
    - **Reasoning (Lý lẽ)**: Phân tích logic tại sao luận điểm đó đúng.
-   - **Evidence (Bằng chứng - BẮT BUỘC)**: Trích dẫn số liệu, báo cáo, nghiên cứu từ nguồn uy tín. PHẢI điền đầy đủ: evidence_text (nội dung bằng chứng), evidence_source (tên tổ chức/tạp chí công bố, ví dụ: "Pew Research Center", "World Bank", "Nature", "McKinsey & Company"), evidence_year (năm công bố, ví dụ: "2023"), evidence_query (cụm từ tiếng Anh để tìm kiếm báo cáo này trên Google Scholar, ngắn gọn 5-8 từ, ví dụ: "AI automation jobs displacement 2023 McKinsey").
+   - **Evidence (Bằng chứng)**: Mô tả loại bằng chứng cần thiết (số liệu, nghiên cứu, báo cáo).
+   - **search_keywords**: TỪ KHÓA TÌM KIẾM bằng tiếng Anh (3-6 từ) để hệ thống tự động tìm paper thật. Ví dụ: "climate change economic impact 2023", "AI job displacement statistics", "remote work productivity study".
    - **Link (Tiểu kết)**: Loại bỏ sự lặp lại; Kiểm tra luồng logic giữa các điểm. Đảm bảo mỗi luận điểm đều liên quan trực tiếp đến đề bài.
+
+⚠️ QUAN TRỌNG - TRÁNH ẢO GIÁC CITATION:
+- KHÔNG được bịa ra tên nguồn cụ thể như "Nghiên cứu của Harvard 2024" hay "Báo cáo McKinsey 2023" nếu bạn không chắc chắn.
+- Hãy mô tả bằng chứng bạn CẦN, hệ thống sẽ tự tìm paper thật tương ứng.
+- Ví dụ đúng: "Các nghiên cứu về tác động của AI đến thị trường lao động" + keywords: "AI labor market impact"
+- Ví dụ sai: "Theo báo cáo của McKinsey 2023, AI sẽ thay thế 800 triệu việc làm" (có thể không tồn tại)
 
 ĐỊNH DẠNG OUTPUT (JSON - TUÂN THỦ TUYỆT ĐỐI):
 {
@@ -571,28 +597,22 @@ YÊU CẦU LOGIC:
     {
       "assertion": "Luận điểm 1: ...",
       "reasoning": "...",
-      "evidence_text": "Nội dung bằng chứng, số liệu cụ thể...",
-      "evidence_source": "Tên tổ chức/tạp chí uy tín",
-      "evidence_year": "Năm",
-      "evidence_query": "cụm từ tìm kiếm tiếng Anh ngắn gọn",
+      "evidence_text": "Mô tả bằng chứng cần thiết (số liệu, loại nghiên cứu)...",
+      "search_keywords": "english keywords for paper search",
       "link": "Tiểu kết..."
     },
     {
       "assertion": "Luận điểm 2: ...",
       "reasoning": "...",
       "evidence_text": "...",
-      "evidence_source": "...",
-      "evidence_year": "...",
-      "evidence_query": "...",
+      "search_keywords": "...",
       "link": "..."
     },
     {
       "assertion": "Luận điểm 3: ...",
       "reasoning": "...",
       "evidence_text": "...",
-      "evidence_source": "...",
-      "evidence_year": "...",
-      "evidence_query": "...",
+      "search_keywords": "...",
       "link": "..."
     }
   ]
@@ -656,16 +676,22 @@ YÊU CẦU THÁI ĐỘ:
             for (const arg of args) {
               let content = typeof arg === 'string' ? arg : '';
               if (typeof arg === 'object' && arg !== null) {
-                // STEP 2: Resolve link thực từ API học thuật
-                const searchQuery = arg.evidence_query ||
-                  `${arg.evidence_source || ''} ${arg.evidence_year || ''}`.trim() ||
-                  arg.assertion || '';
-                const resolved = await resolveEvidenceUrl(
-                  searchQuery,
-                  arg.evidence_source || '',
-                  arg.evidence_year || ''
-                );
-                console.log(`[Round2 Evidence] query="${searchQuery}" → source=${resolved.source} url=${resolved.directUrl}`);
+                // Use search_keywords (NEW) or fallback to evidence_query (OLD format)
+                const searchQuery = arg.search_keywords ||
+                                    arg.evidence_query ||
+                                    arg.assertion?.replace(/[^\w\s]/g, '').slice(0, 50) || '';
+
+                console.log(`[Round2 Scenario B] Searching for: "${searchQuery}"`);
+
+                // Search for REAL paper
+                const resolved = await resolveEvidenceUrl(searchQuery);
+
+                if (resolved.source !== 'fallback') {
+                  console.log(`[Round2 Scenario B] ✓ Found paper: "${resolved.paperTitle}" (${resolved.paperYear})`);
+                } else {
+                  console.log(`[Round2 Scenario B] ✗ No paper found, showing search links only`);
+                }
+
                 content = buildArgumentContent(arg as Record<string, string>, resolved);
               }
 
@@ -734,65 +760,93 @@ interface ResolvedEvidence {
   source: 'semantic_scholar' | 'crossref' | 'fallback';
   paperTitle?: string;      // Tiêu đề bài báo thực tế (nếu tìm được)
   paperYear?: string;
+  abstract?: string;        // Tóm tắt bài báo (nếu có)
+  venue?: string;           // Tạp chí/hội nghị công bố
+  isOpenAccess: boolean;    // Có đọc miễn phí được không
 }
 
-async function resolveEvidenceUrl(
-  query: string,
-  sourceName: string = '',
-  year: string = ''
-): Promise<ResolvedEvidence> {
-  const encodedQuery = encodeURIComponent(query);
-  const scholarSearchUrl = `https://scholar.google.com/scholar?q=${encodedQuery}`;
-  const googleSearchUrl = `https://www.google.com/search?q=${encodedQuery}`;
+// Tìm paper thật từ Semantic Scholar/CrossRef
+// Trả về paper thật hoặc null nếu không tìm được
+interface RealPaper {
+  title: string;
+  year: string;
+  url: string;
+  source: string;           // Tên tạp chí/tổ chức
+  isOpenAccess: boolean;
+  abstract?: string;
+}
 
-  // --- STEP 1: Semantic Scholar API ---
+async function searchRealPaper(keywords: string): Promise<RealPaper | null> {
+  const encodedQuery = encodeURIComponent(keywords);
+
+  // STEP 1: Semantic Scholar API - ưu tiên paper có openAccessPdf
   try {
-    const ssUrl = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodedQuery}&fields=title,year,externalIds,openAccessPdf,url&limit=3`;
+    const ssUrl = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodedQuery}&fields=title,year,venue,openAccessPdf,externalIds,abstract,url&limit=5`;
     const ssRes = await fetch(ssUrl, {
       headers: { 'User-Agent': 'EscapeDebate/1.0' },
-      signal: AbortSignal.timeout(4000)
+      signal: AbortSignal.timeout(6000)
     });
+
     if (ssRes.ok) {
       const ssData = await ssRes.json() as {
         data?: Array<{
           title: string;
           year?: number;
+          venue?: string;
           url?: string;
+          abstract?: string;
           openAccessPdf?: { url: string };
           externalIds?: { DOI?: string; ArXiv?: string };
         }>;
       };
       const papers = ssData.data || [];
-      // Ưu tiên paper có openAccessPdf (đọc miễn phí được)
-      const best = papers.find(p => p.openAccessPdf?.url) || papers[0];
+
+      // Ưu tiên paper có openAccessPdf (đọc miễn phí) + có abstract
+      const best = papers.find(p => p.openAccessPdf?.url && p.abstract) ||
+                   papers.find(p => p.openAccessPdf?.url) ||
+                   papers.find(p => p.externalIds?.DOI && p.abstract) ||
+                   papers[0];
+
       if (best) {
-        const directUrl =
-          best.openAccessPdf?.url ||
-          (best.externalIds?.DOI ? `https://doi.org/${best.externalIds.DOI}` : null) ||
-          best.url ||
-          scholarSearchUrl;
+        // Ưu tiên URL theo thứ tự: openAccessPdf > DOI > ArXiv > Semantic Scholar page
+        let paperUrl: string;
+        if (best.openAccessPdf?.url) {
+          paperUrl = best.openAccessPdf.url;
+        } else if (best.externalIds?.DOI) {
+          paperUrl = `https://doi.org/${best.externalIds.DOI}`;
+        } else if (best.externalIds?.ArXiv) {
+          paperUrl = `https://arxiv.org/abs/${best.externalIds.ArXiv}`;
+        } else if (best.url) {
+          paperUrl = best.url;
+        } else {
+          // Fallback to Google Scholar search
+          paperUrl = `https://scholar.google.com/scholar?q=${encodedQuery}`;
+        }
+
+        console.log(`[searchRealPaper] Semantic Scholar HIT: "${best.title}" (${best.year})`);
+
         return {
-          directUrl,
-          scholarSearchUrl,
-          googleSearchUrl,
-          source: 'semantic_scholar',
-          paperTitle: best.title,
-          paperYear: best.year?.toString()
+          title: best.title,
+          year: best.year?.toString() || '',
+          url: paperUrl,
+          source: best.venue || 'Semantic Scholar',
+          isOpenAccess: !!best.openAccessPdf?.url,
+          abstract: best.abstract
         };
       }
     }
   } catch (e) {
-    console.warn('[resolveEvidenceUrl] Semantic Scholar failed:', (e as Error).message);
+    console.warn('[searchRealPaper] Semantic Scholar failed:', (e as Error).message);
   }
 
-  // --- STEP 2: CrossRef API ---
+  // STEP 2: CrossRef API
   try {
-    const crQuery = year ? `${query} ${year}` : query;
-    const crUrl = `https://api.crossref.org/works?query=${encodeURIComponent(crQuery)}&rows=3&select=title,published,DOI,URL`;
+    const crUrl = `https://api.crossref.org/works?query=${encodedQuery}&rows=5&select=title,published,DOI,URL,abstract,publisher`;
     const crRes = await fetch(crUrl, {
-      headers: { 'User-Agent': 'EscapeDebate/1.0 (mailto:admin@escapedebate.com)' },
-      signal: AbortSignal.timeout(4000)
+      headers: { 'User-Agent': 'EscapeDebate/1.0 (mailto:escape.echochamber@gmail.com)' },
+      signal: AbortSignal.timeout(6000)
     });
+
     if (crRes.ok) {
       const crData = await crRes.json() as {
         message?: {
@@ -800,60 +854,121 @@ async function resolveEvidenceUrl(
             title?: string[];
             DOI?: string;
             URL?: string;
+            publisher?: string;
+            abstract?: string;
             published?: { 'date-parts'?: number[][] };
           }>;
         };
       };
       const items = crData.message?.items || [];
-      const best = items[0];
-      if (best?.DOI) {
-        const doiUrl = `https://doi.org/${best.DOI}`;
-        const publishedYear = best.published?.['date-parts']?.[0]?.[0]?.toString();
+
+      // Filter out non-paper results (references, figures, supplements, etc.)
+      const badKeywords = ['reference', 'figure', 'table', 'supplement', 'appendix', 'appendices', 'erratum', 'correction', 'chapter'];
+      const validItems = items.filter(item => {
+        const title = item.title?.[0]?.toLowerCase() || '';
+        // Check if title is too short or contains bad keywords
+        if (title.length < 15) return false;
+        if (badKeywords.some(kw => title.includes(kw))) return false;
+        return true;
+      });
+
+      // Lọc item có title và DOI
+      const best = validItems.find(item => item.DOI && item.title?.[0]);
+
+      if (best && best.DOI) {
+        const title = best.title?.[0] || 'Unknown';
+        const year = best.published?.['date-parts']?.[0]?.[0]?.toString() || '';
+
+        console.log(`[searchRealPaper] CrossRef HIT: "${title}" (${year})`);
+
         return {
-          directUrl: doiUrl,
-          scholarSearchUrl,
-          googleSearchUrl,
-          source: 'crossref',
-          paperTitle: best.title?.[0],
-          paperYear: publishedYear
+          title: title,
+          year: year,
+          url: `https://doi.org/${best.DOI}`,
+          source: best.publisher || 'CrossRef',
+          isOpenAccess: false,
+          abstract: best.abstract
         };
       }
     }
   } catch (e) {
-    console.warn('[resolveEvidenceUrl] CrossRef failed:', (e as Error).message);
+    console.warn('[searchRealPaper] CrossRef failed:', (e as Error).message);
   }
 
-  // --- STEP 3: Fallback ---
+  console.log(`[searchRealPaper] NO PAPER FOUND for: "${keywords}"`);
+  return null;
+}
+
+// Legacy function - kept for backward compatibility
+async function resolveEvidenceUrl(
+  query: string,
+  sourceName: string = '',
+  year: string = ''
+): Promise<ResolvedEvidence> {
+  const paper = await searchRealPaper(query);
+
+  const scholarSearchUrl = `https://scholar.google.com/scholar?q=${encodeURIComponent(query)}`;
+  const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+
+  if (paper) {
+    return {
+      directUrl: paper.url,
+      scholarSearchUrl,
+      googleSearchUrl,
+      source: paper.isOpenAccess ? 'semantic_scholar' : 'crossref',
+      paperTitle: paper.title,
+      paperYear: paper.year,
+      abstract: paper.abstract,
+      venue: paper.source,
+      isOpenAccess: paper.isOpenAccess
+    };
+  }
+
+  // Fallback - không tìm được paper thật
   return {
     directUrl: scholarSearchUrl,
     scholarSearchUrl,
     googleSearchUrl,
-    source: 'fallback'
+    source: 'fallback',
+    isOpenAccess: false
   };
 }
 
-// Tạo nội dung markdown cho 1 luận điểm AREL có link đã resolve
+// Tạo nội dung markdown cho 1 luận điểm AREL với paper ĐÃ VERIFIED
 function buildArgumentContent(arg: Record<string, string>, resolved: ResolvedEvidence): string {
-  const evidenceText = arg.evidence_text || arg.evidence || '';
-  const sourceName = arg.evidence_source || '';
-  const year = resolved.paperYear || arg.evidence_year || '';
+  const linkLine: string[] = [];
 
-  let sourceBlock = '';
   if (resolved.source !== 'fallback' && resolved.paperTitle) {
-    // Tìm được bài thực → hiển thị tiêu đề bài và link trực tiếp
-    const yearStr = year ? ` (${year})` : '';
-    sourceBlock = `*Nguồn: **${sourceName}**${yearStr}*\n📄 **Bài báo:** [${resolved.paperTitle.length > 80 ? resolved.paperTitle.slice(0, 80) + '…' : resolved.paperTitle}](${resolved.directUrl})`;
+    // ✅ TÌM THẤY PAPER THẬT - Hiển thị citation đầy đủ
+    const yearStr = resolved.paperYear ? ` (${resolved.paperYear})` : '';
+    const openAccessBadge = resolved.isOpenAccess ? ' 📖 *Miễn phí*' : '';
+    const truncatedTitle = resolved.paperTitle.length > 80
+      ? resolved.paperTitle.slice(0, 80) + '…'
+      : resolved.paperTitle;
+
+    linkLine.push(`📄 **Bài báo:** [${truncatedTitle}](${resolved.directUrl})${openAccessBadge}`);
+    linkLine.push(`📰 **Nguồn:** ${resolved.venue || 'Academic Journal'}${yearStr}`);
+    linkLine.push(`🔗 **Xem chi tiết:** [Mở bài báo](${resolved.directUrl}) · [Tìm thêm trên Scholar](${resolved.scholarSearchUrl})`);
   } else {
-    // Fallback → hiển thị link tìm kiếm
-    const yearStr = year ? ` (${year})` : '';
-    sourceBlock = `*Nguồn: **${sourceName}**${yearStr}*`;
+    // ⚠️ KHÔNG TÌM THẤY PAPER - Hiển thị cảnh báo + link tìm kiếm
+    linkLine.push(`⚠️ *Không tìm thấy bài báo chính xác. Vui lòng tự kiểm chứng.*`);
+    linkLine.push(`🔍 **Tìm kiếm:** [Google Scholar](${resolved.scholarSearchUrl}) · [Google](${resolved.googleSearchUrl})`);
   }
 
-  const linkLine = resolved.source !== 'fallback'
-    ? `🔗 **Xem bài gốc:** [Mở bài báo trực tiếp](${resolved.directUrl}) · [Tìm thêm trên Scholar](${resolved.scholarSearchUrl})`
-    : `🔗 **Kiểm chứng nguồn:** [Tìm trên Google Scholar](${resolved.scholarSearchUrl}) · [Tìm trên Google](${resolved.googleSearchUrl})`;
+  const assertion = arg.assertion || arg['Luận điểm'] || '';
+  const reasoning = arg.reasoning || arg['Lý lẽ'] || '';
+  const evidence = arg.evidence_text || arg.evidence || arg['Bằng chứng'] || '';
+  const link = arg.link || arg['Tiểu kết'] || '';
 
-  return `**🔷 Khẳng định:** ${arg.assertion}\n\n**💡 Lý lẽ:** ${arg.reasoning}\n\n**📊 Bằng chứng:** ${evidenceText}\n${sourceBlock}\n\n${linkLine}\n\n**⚡ Tiểu kết:** ${arg.link}`;
+  return `**🔷 Khẳng định:** ${assertion}
+
+**💡 Lý lẽ:** ${reasoning}
+
+**📊 Bằng chứng:** ${evidence}
+
+${linkLine.join('\n')}
+
+**⚡ Tiểu kết:** ${link}`;
 }
 
 // Helper function outside request handler

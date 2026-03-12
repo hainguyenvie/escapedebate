@@ -71,8 +71,8 @@ export default function Home() {
         </section>
 
         {/* Input Section (ENTER combo) */}
-        <div className="relative mb-8 w-full max-w-4xl flex items-stretch h-16 md:h-20 gap-3 md:gap-4">
-          <div className="flex-1 relative h-full">
+        <div className="relative mb-8 w-full max-w-4xl flex flex-col md:flex-row items-stretch h-auto md:h-20 gap-3 md:gap-4">
+          <div className="flex-1 relative h-16 md:h-full">
             <div className="cyber-key-enter-body w-full h-full relative cursor-text">
                <input
                  value={topic}
@@ -89,7 +89,7 @@ export default function Home() {
           <button 
             onClick={handleStart}
             disabled={createDebate.isPending}
-            className="cyber-key-enter-body w-32 md:w-40 shrink-0 relative flex items-center justify-center group active:scale-95 transition-transform"
+            className="cyber-key-enter-body w-full md:w-40 h-14 md:h-full shrink-0 relative flex items-center justify-center group active:scale-95 transition-transform"
           >
             <div className="cyber-key-enter-top font-black text-slate-500 text-lg md:text-xl justify-center group-hover:text-pink-500 transition-colors">
               {createDebate.isPending ? "..." : "ENTER"}
@@ -98,42 +98,50 @@ export default function Home() {
         </div>
 
         {/* TAB Keys Selection */}
-        <div className="flex justify-between items-center w-full max-w-4xl mb-6 px-2 space-x-4">
-          <button 
-            onClick={() => setSide("support")}
-            className={clsx(
-              "cyber-key w-40 md:w-56 h-20 md:h-24 !border-[#10b981]/60 !bg-emerald-50/50",
-              side === "support" ? "active-press !bg-emerald-100/80" : ""
-            )}
-          >
-            <div className="cyber-key-top text-lg md:text-2xl relative">
-               <span className="text-[#10b981] font-black uppercase tracking-wide">ỦNG HỘ</span>
-               <div className={clsx("key-led !mt-0 absolute bottom-3 right-4", side === "support" ? "green" : "")} />
-            </div>
-          </button>
-
-          <div className="flex-1 flex items-center justify-center px-2">
-            <span className="font-black text-base md:text-lg lg:text-xl text-slate-500 uppercase tracking-widest text-center select-none whitespace-nowrap">
+        <div className="flex flex-col md:flex-row justify-between items-center w-full max-w-4xl mb-6 px-2 gap-4 md:space-x-4">
+          <div className="flex md:hidden items-center justify-center w-full mb-2">
+            <span className="font-black text-base text-slate-500 uppercase tracking-widest text-center select-none">
               BẠN CHỌN PHE NÀO?
             </span>
           </div>
 
-          <button 
-            onClick={() => setSide("oppose")}
-            className={clsx(
-              "cyber-key w-40 md:w-56 h-20 md:h-24 !border-[#ef4444]/60 !bg-red-50/50",
-              side === "oppose" ? "active-press !bg-red-100/80" : ""
-            )}
-          >
-            <div className="cyber-key-top text-lg md:text-2xl relative">
-               <span className="text-[#ef4444] font-black uppercase tracking-wide">PHẢN ĐỐI</span>
-               <div className={clsx("key-led !mt-0 absolute bottom-3 right-4", side === "oppose" ? "red" : "")} />
+          <div className="flex justify-between items-center w-full gap-4">
+            <button 
+              onClick={() => setSide("support")}
+              className={clsx(
+                "cyber-key flex-1 md:w-56 h-20 md:h-24 !border-[#10b981]/60 !bg-emerald-50/50",
+                side === "support" ? "active-press !bg-emerald-100/80" : ""
+              )}
+            >
+              <div className="cyber-key-top text-base md:text-2xl relative">
+                 <span className="text-[#10b981] font-black uppercase tracking-wide">ỦNG HỘ</span>
+                 <div className={clsx("key-led !mt-0 absolute bottom-3 right-3 md:right-4", side === "support" ? "green" : "")} />
+              </div>
+            </button>
+
+            <div className="hidden md:flex flex-1 items-center justify-center px-2">
+              <span className="font-black text-base md:text-lg lg:text-xl text-slate-500 uppercase tracking-widest text-center select-none whitespace-nowrap">
+                BẠN CHỌN PHE NÀO?
+              </span>
             </div>
-          </button>
+
+            <button 
+              onClick={() => setSide("oppose")}
+              className={clsx(
+                "cyber-key flex-1 md:w-56 h-20 md:h-24 !border-[#ef4444]/60 !bg-red-50/50",
+                side === "oppose" ? "active-press !bg-red-100/80" : ""
+              )}
+            >
+              <div className="cyber-key-top text-base md:text-2xl relative">
+                 <span className="text-[#ef4444] font-black uppercase tracking-wide">PHẢN ĐỐI</span>
+                 <div className={clsx("key-led !mt-0 absolute bottom-3 right-3 md:right-4", side === "oppose" ? "red" : "")} />
+              </div>
+            </button>
+          </div>
         </div>
 
         {/* The Pink Board holding Debate History */}
-        <div className="pink-board w-full max-w-5xl mt-20 mb-12 relative z-10 !rounded-tl-none">
+        <div className="pink-board w-full max-w-5xl mt-12 md:mt-20 mb-12 relative z-10 !rounded-tl-none !p-3 md:!p-6">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSIvPjwvc3ZnPg==')] rounded-[28px] !rounded-tl-none pointer-events-none mix-blend-overlay"></div>
           
           {/* Folder Tab */}
