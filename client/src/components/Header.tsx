@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 export function Header() {
   const { user, signOut } = useAuth();
@@ -11,8 +12,10 @@ export function Header() {
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node) &&
-          btnRef.current && !btnRef.current.contains(e.target as Node)) {
+      if (
+        menuRef.current && !menuRef.current.contains(e.target as Node) &&
+        btnRef.current && !btnRef.current.contains(e.target as Node)
+      ) {
         setMenuOpen(false);
       }
     }
@@ -31,10 +34,33 @@ export function Header() {
   const avatarUrl = user?.user_metadata?.avatar_url;
   const displayName = user?.user_metadata?.full_name || user?.email || "";
 
+  const dropdown = menuOpen ? createPortal(
+    <div
+      ref={menuRef}
+      style={{ top: menuPos.top, right: menuPos.right, position: "fixed", zIndex: 99999 }}
+      className="bg-white rounded-2xl shadow-xl border border-slate-100 py-2 w-52"
+    >
+      <div className="px-4 py-2 border-b border-slate-100">
+        <p className="text-xs font-semibold text-slate-700 truncate" data-testid="text-username">
+          {displayName}
+        </p>
+        <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+      </div>
+      <button
+        data-testid="button-signout"
+        onClick={() => { signOut(); setMenuOpen(false); }}
+        className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors font-medium"
+      >
+        Đăng xuất
+      </button>
+    </div>,
+    document.body
+  ) : null;
+
   return (
     <header className="mb-10 w-full">
       <div className="relative rounded-3xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-4 max-w-4xl mx-auto bg-gradient-to-br from-[#E91E63] to-[#c2185b] border-2 border-[#E91E63] shadow-[0_4px_15px_rgba(233,30,99,0.25)] group">
-        <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+        <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none rounded-3xl" />
         <div className="absolute -inset-1 bg-[#E91E63] rounded-3xl blur-md opacity-0 group-hover:opacity-20 transition-opacity duration-500 -z-10 pointer-events-none"></div>
 
         <Link href="/">
@@ -74,32 +100,12 @@ export function Header() {
                   </svg>
                 )}
               </button>
-
-              {menuOpen && (
-                <div
-                  ref={menuRef}
-                  style={{ top: menuPos.top, right: menuPos.right }}
-                  className="fixed bg-white rounded-2xl shadow-xl border border-slate-100 py-2 w-52 z-[9999]"
-                >
-                  <div className="px-4 py-2 border-b border-slate-100">
-                    <p className="text-xs font-semibold text-slate-700 truncate" data-testid="text-username">
-                      {displayName}
-                    </p>
-                    <p className="text-xs text-slate-400 truncate">{user.email}</p>
-                  </div>
-                  <button
-                    data-testid="button-signout"
-                    onClick={() => { signOut(); setMenuOpen(false); }}
-                    className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors font-medium"
-                  >
-                    Đăng xuất
-                  </button>
-                </div>
-              )}
             </div>
           )}
         </div>
       </div>
+
+      {dropdown}
     </header>
   );
 }
