@@ -88,16 +88,26 @@ export default function Home() {
                />
             </div>
           </div>
-          <button 
-            onClick={user ? handleStart : () => setLocation("/login")}
-            disabled={createDebate.isPending}
-            data-testid="button-enter"
-            className="cyber-key-enter-body w-full md:w-40 h-14 md:h-full shrink-0 relative flex items-center justify-center group active:scale-95 transition-transform"
-          >
-            <div className="cyber-key-enter-top font-black text-slate-500 text-lg md:text-xl justify-center group-hover:text-pink-500 transition-colors">
-              {createDebate.isPending ? "..." : user ? "ENTER" : "Đăng nhập"}
-            </div>
-          </button>
+          {user ? (
+            <button 
+              onClick={handleStart}
+              disabled={createDebate.isPending}
+              data-testid="button-enter"
+              className="cyber-key-enter-body w-full md:w-40 h-14 md:h-full shrink-0 relative flex items-center justify-center group active:scale-95 transition-transform"
+            >
+              <div className="cyber-key-enter-top font-black text-slate-500 text-lg md:text-xl justify-center group-hover:text-pink-500 transition-colors">
+                {createDebate.isPending ? "..." : "ENTER"}
+              </div>
+            </button>
+          ) : (
+            <button
+              onClick={() => setLocation("/login")}
+              data-testid="button-enter"
+              className="w-full md:w-40 h-14 md:h-full shrink-0 relative flex items-center justify-center rounded-xl bg-[#E91E63] border-b-4 border-[#b5134a] text-white font-black text-lg md:text-xl whitespace-nowrap px-6 active:scale-95 active:border-b-2 transition-all shadow-[0_4px_12px_rgba(233,30,99,0.35)] hover:bg-[#d81b60]"
+            >
+              Đăng nhập
+            </button>
+          )}
         </div>
 
         {/* TAB Keys Selection */}
