@@ -502,7 +502,10 @@ export default function DebateSession() {
                     (activeRound !== 3 || debate.side !== 'oppose' || userMessagesInActiveRoundCount >= 2)
                   }
                   rows={1}
-                  className="w-full bg-primary text-white placeholder:text-white/60 py-4 px-6 rounded-[28px] border-none shadow-lg focus:ring-4 focus:ring-primary/20 outline-none font-medium disabled:opacity-50 resize-none overflow-y-auto block min-h-[56px] leading-[24px] scrollbar-hide"
+                  className={clsx(
+                    "w-full bg-primary text-white placeholder:text-white/60 py-3 sm:py-4 px-5 sm:px-6 rounded-[24px] sm:rounded-[28px] border-none shadow-lg focus:ring-4 focus:ring-primary/20 outline-none font-medium disabled:opacity-50 resize-none overflow-y-auto block min-h-[48px] sm:min-h-[56px] leading-[24px] scrollbar-hide",
+                    input === '' ? "whitespace-nowrap text-ellipsis" : "whitespace-pre-wrap"
+                  )}
                   style={{ maxHeight: '300px' }}
                   placeholder={getPlaceholder(activeRound)}
                 />
@@ -532,7 +535,7 @@ export default function DebateSession() {
                   (activeRound !== 3 || debate.side !== 'support' || userMessagesInActiveRoundCount >= 1) &&
                   (activeRound !== 3 || debate.side !== 'oppose' || userMessagesInActiveRoundCount >= 2)
                 )}
-                className="bg-primary hover:bg-[#C2185B] text-white px-8 rounded-full font-bold uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-95 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none h-[56px] shrink-0"
+                className="bg-primary hover:bg-[#C2185B] text-white px-6 sm:px-8 rounded-full font-bold uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-95 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none h-[48px] sm:h-[56px] shrink-0"
               >
                 GỬI
               </button>
