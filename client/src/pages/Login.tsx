@@ -14,7 +14,7 @@ export default function Login() {
   }, [user, loading, setLocation]);
 
   return (
-    <div className="relative font-body min-h-screen flex flex-col items-center justify-start pt-16 px-4 overflow-hidden">
+    <div className="relative font-body min-h-screen flex flex-col items-center justify-center px-4 overflow-hidden">
       <div className="cyberspace-bg" />
       <div className="cyberspace-glow" />
 
@@ -49,7 +49,7 @@ export default function Login() {
             className="w-full flex items-center justify-center gap-3 border-2 border-slate-200 rounded-xl px-6 py-4 text-slate-700 font-semibold text-base hover:border-[#E91E63]/50 hover:bg-pink-50/50 transition-all active:scale-95"
           >
             <SiGoogle className="w-5 h-5" />
-            Đăng ký bằng Gmail
+            Đăng nhập bằng Gmail
           </button>
 
           <p className="mt-6 text-xs text-slate-400 leading-relaxed">
