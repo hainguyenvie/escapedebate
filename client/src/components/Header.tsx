@@ -5,17 +5,28 @@ import { useState, useRef, useEffect } from "react";
 export function Header() {
   const { user, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node) &&
+          btnRef.current && !btnRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleAvatarClick = () => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setMenuPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+    }
+    setMenuOpen((v) => !v);
+  };
 
   const avatarUrl = user?.user_metadata?.avatar_url;
   const displayName = user?.user_metadata?.full_name || user?.email || "";
@@ -43,10 +54,11 @@ export function Header() {
           </div>
 
           {user && (
-            <div className="relative" ref={menuRef}>
+            <div className="relative">
               <button
+                ref={btnRef}
                 data-testid="button-user-avatar"
-                onClick={() => setMenuOpen((v) => !v)}
+                onClick={handleAvatarClick}
                 className="w-9 h-9 rounded-full border-2 border-white/50 overflow-hidden flex items-center justify-center bg-white/20 hover:border-white transition-all active:scale-95 shrink-0"
               >
                 {avatarUrl ? (
@@ -64,7 +76,11 @@ export function Header() {
               </button>
 
               {menuOpen && (
-                <div className="absolute right-0 top-12 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 w-52 z-50">
+                <div
+                  ref={menuRef}
+                  style={{ top: menuPos.top, right: menuPos.right }}
+                  className="fixed bg-white rounded-2xl shadow-xl border border-slate-100 py-2 w-52 z-[9999]"
+                >
                   <div className="px-4 py-2 border-b border-slate-100">
                     <p className="text-xs font-semibold text-slate-700 truncate" data-testid="text-username">
                       {displayName}
