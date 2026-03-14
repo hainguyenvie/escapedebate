@@ -9,6 +9,77 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// ==================================================================================
+// RELIABILITY: Timeout + Retry với exponential backoff
+// ==================================================================================
+const OPENAI_TIMEOUT_MS = 30_000;
+const MAX_RETRIES = 3;
+
+async function callOpenAI(params: Parameters<typeof openai.chat.completions.create>[0]) {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const result = await openai.chat.completions.create({
+        ...params,
+        signal: AbortSignal.timeout(OPENAI_TIMEOUT_MS),
+      } as Parameters<typeof openai.chat.completions.create>[0]);
+      return result;
+    } catch (err: unknown) {
+      lastError = err as Error;
+      const e = err as { status?: number; message?: string; name?: string; code?: string };
+      const isRateLimit = e?.status === 429 || (e?.message || '').toLowerCase().includes('rate limit');
+      const isTimeout = e?.name === 'AbortError' || e?.name === 'TimeoutError' || e?.code === 'ETIMEDOUT';
+      if (isRateLimit || isTimeout) {
+        const delay = Math.pow(2, attempt) * 1200;
+        console.warn(`[OpenAI] Attempt ${attempt + 1}/${MAX_RETRIES} failed (${isRateLimit ? 'rate_limit' : 'timeout'}), retry in ${delay}ms`);
+        await new Promise(r => setTimeout(r, delay));
+      } else {
+        throw err;
+      }
+    }
+  }
+  throw lastError;
+}
+
+// ==================================================================================
+// SCALABILITY: Giới hạn context window gửi lên OpenAI (giảm token & latency)
+// ==================================================================================
+const MAX_HISTORY_MESSAGES = 24;
+
+function trimHistory(messages: Array<{ role: string; content: string }>) {
+  if (messages.length <= MAX_HISTORY_MESSAGES) return messages;
+  return messages.slice(-MAX_HISTORY_MESSAGES);
+}
+
+// ==================================================================================
+// RATE LIMITER: Per-user (IP-based), tránh spam request
+// ==================================================================================
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 20;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+
+function checkRateLimit(key: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true };
+  }
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+  entry.count++;
+  return { allowed: true };
+}
+
+// Cleanup stale rate limit entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitMap.entries()) {
+    if (now > entry.resetAt) rateLimitMap.delete(key);
+  }
+}, 5 * 60_000);
+
 async function seedDatabase() {
   const existingDebates = await storage.getDebates();
   if (existingDebates.length === 0) {
@@ -44,13 +115,19 @@ export async function registerRoutes(
 
   app.post(api.debates.create.path, async (req, res) => {
     try {
+      const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || 'unknown').split(',')[0].trim();
+      const rateCheck = checkRateLimit(`create:${clientIp}`);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ message: `Quá nhiều yêu cầu. Vui lòng thử lại sau ${rateCheck.retryAfter} giây.` });
+      }
+
       const input = api.debates.create.input.parse(req.body);
 
       // Call LLM to refine topic and create moderator intro
       const sideText = input.side === "support" ? "Ủng hộ" : "Phản đối";
       const oppositeSideText = input.side === "support" ? "Phản đối" : "Ủng hộ";
 
-      const refinementResponse = await openai.chat.completions.create({
+      const refinementResponse = await callOpenAI({
         model: "gpt-4o-mini",
         messages: [
           {
@@ -141,7 +218,7 @@ LƯU Ý: Tuyệt đối từ chối các nội dung CHÍNH TRỊ dù ở bất k
 - Ngắn gọn, tự tin, tiên phong.
 - KHÔNG đặt câu hỏi, KHÔNG kêu gọi phản hồi.`;
 
-        const aiResponse = await openai.chat.completions.create({
+        const aiResponse = await callOpenAI({
           model: "gpt-4o-mini",
           messages: [{ role: "system", content: aiOpeningPrompt }]
         });
@@ -189,6 +266,12 @@ LƯU Ý: Tuyệt đối từ chối các nội dung CHÍNH TRỊ dù ở bất k
 
   app.post(api.debates.addMessage.path, async (req, res) => {
     try {
+      const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || 'unknown').split(',')[0].trim();
+      const rateCheck = checkRateLimit(`msg:${clientIp}`);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ message: `Bạn đang gửi quá nhanh. Vui lòng chờ ${rateCheck.retryAfter} giây.` });
+      }
+
       const id = Number(req.params.id);
       const { content } = api.debates.addMessage.input.parse(req.body);
       const debate = await storage.getDebate(id);
@@ -384,11 +467,11 @@ YÊU CẦU THÁI ĐỘ:
 
 
         // 5. Call AI (Phản biện lại User)
-        const response = await openai.chat.completions.create({
+        const response = await callOpenAI({
           model: "gpt-4o-mini",
           messages: [
             { role: "system", content: systemPrompt },
-            ...history.map(m => ({ role: m.role as "user" | "assistant", content: m.content }))
+            ...trimHistory(history.map(m => ({ role: m.role as "user" | "assistant", content: m.content })))
           ],
           response_format: (currentRound === 2 || currentRound === 3) ? { type: "json_object" } : undefined
         });
@@ -502,14 +585,14 @@ YÊU CẦU:
 
 ĐỊNH DẠNG: Đoạn văn thuần túy (không cần JSON).`;
 
-          const aiAnswerResponse = await openai.chat.completions.create({
+          const aiAnswerResponse = await callOpenAI({
             model: "gpt-4o-mini",
             messages: [
               { role: "system", content: aiAnswerPrompt },
-              ...(await storage.getMessages(id)).map(m => ({
+              ...trimHistory((await storage.getMessages(id)).map(m => ({
                 role: m.role as "user" | "assistant" | "system",
                 content: m.content
-              }))
+              })))
             ]
           });
 
@@ -545,14 +628,14 @@ YÊU CẦU THÁI ĐỘ:
 
 ĐỊNH DẠNG: Một đoạn văn nghị luận hùng hồn, giàu cảm xúc và gây ấn tượng mạnh để khép lại tranh luận.`;
 
-            const v4Response = await openai.chat.completions.create({
+            const v4Response = await callOpenAI({
               model: "gpt-4o-mini",
               messages: [
                 { role: "system", content: aiV4Prompt },
-                ...(await storage.getMessages(id)).map(m => ({
+                ...trimHistory((await storage.getMessages(id)).map(m => ({
                   role: m.role as "user" | "assistant" | "system",
                   content: m.content
-                }))
+                })))
               ]
             });
 
@@ -662,15 +745,15 @@ YÊU CẦU THÁI ĐỘ:
           }
 
           // Call AI to start next round
-          const response = await openai.chat.completions.create({
+          const response = await callOpenAI({
             model: "gpt-4o-mini",
             messages: [
               { role: "system", content: aiOpeningSystemPrompt },
-              // Lấy toàn bộ history bao gồm cả moderator summary vừa tạo
-              ...(await storage.getMessages(id)).map(m => ({
+              // Lấy history bao gồm cả moderator summary vừa tạo (trimmed)
+              ...trimHistory((await storage.getMessages(id)).map(m => ({
                 role: m.role as "user" | "assistant" | "system",
                 content: m.content
-              }))
+              })))
             ],
             response_format: nextRound === 2 ? { type: "json_object" } : undefined
           });
@@ -725,9 +808,16 @@ YÊU CẦU THÁI ĐỘ:
 
       res.status(201).json(aiMessage);
 
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Failed to process message" });
+    } catch (err: unknown) {
+      const e = err as { status?: number; message?: string; name?: string };
+      console.error('[addMessage error]', e?.message || err);
+      if (e?.status === 429) {
+        return res.status(503).json({ message: "AI đang bận, vui lòng thử lại sau vài giây." });
+      }
+      if (e?.name === 'AbortError' || e?.name === 'TimeoutError') {
+        return res.status(504).json({ message: "AI phản hồi quá chậm, vui lòng thử lại." });
+      }
+      res.status(500).json({ message: "Lỗi xử lý, vui lòng thử lại." });
     }
   });
 
@@ -1068,13 +1158,14 @@ ${currentRound === 2 ? `
 
 Rule: Tiếng Việt, văn phong trang trọng, chuyên nghiệp, khách quan.`;
 
-  const moderatorSummaryResponse = await openai.chat.completions.create({
+  const recentHistory = trimHistory(fullHistory);
+  const moderatorSummaryResponse = await callOpenAI({
     model: "gpt-4o-mini",
     messages: [
       { role: "system", content: moderatorSystemPrompt },
       {
         role: "user",
-        content: `Motion: "${motion}"\nVòng ${currentRound} history:\n` + fullHistory.map(m => `${m.role}: ${m.content}`).join('\n')
+        content: `Motion: "${motion}"\nVòng ${currentRound} history:\n` + recentHistory.map(m => `${m.role}: ${m.content}`).join('\n')
       }
     ],
     response_format: { type: "json_object" }
