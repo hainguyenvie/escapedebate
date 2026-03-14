@@ -22,7 +22,7 @@ export function Header() {
 
   return (
     <header className="mb-10 w-full">
-      <div className="relative rounded-3xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-4 overflow-hidden max-w-4xl mx-auto bg-gradient-to-br from-[#E91E63] to-[#c2185b] border-2 border-[#E91E63] shadow-[0_4px_15px_rgba(233,30,99,0.25)] group">
+      <div className="relative rounded-3xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-4 max-w-4xl mx-auto bg-gradient-to-br from-[#E91E63] to-[#c2185b] border-2 border-[#E91E63] shadow-[0_4px_15px_rgba(233,30,99,0.25)] group">
         <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
         <div className="absolute -inset-1 bg-[#E91E63] rounded-3xl blur-md opacity-0 group-hover:opacity-20 transition-opacity duration-500 -z-10 pointer-events-none"></div>
 
