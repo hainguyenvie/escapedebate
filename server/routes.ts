@@ -12,7 +12,7 @@ const openai = new OpenAI({
 // ==================================================================================
 // RELIABILITY: Timeout + Retry với exponential backoff
 // ==================================================================================
-const OPENAI_TIMEOUT_MS = 30_000;
+const OPENAI_TIMEOUT_MS = 60_000;
 const MAX_RETRIES = 3;
 
 async function callOpenAI(params: Parameters<typeof openai.chat.completions.create>[0]) {
