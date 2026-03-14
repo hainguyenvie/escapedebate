@@ -37,7 +37,8 @@ export async function registerRoutes(
   });
 
   app.get(api.debates.list.path, async (req, res) => {
-    const debates = await storage.getDebates();
+    const userId = req.query.user_id as string | undefined;
+    const debates = await storage.getDebates(userId);
     res.json(debates);
   });
 

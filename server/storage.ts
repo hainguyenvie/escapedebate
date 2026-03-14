@@ -4,7 +4,7 @@ import { supabase } from "./db";
 export interface IStorage {
   createDebate(debate: InsertDebate): Promise<Debate>;
   getDebate(id: number): Promise<Debate | undefined>;
-  getDebates(): Promise<Debate[]>;
+  getDebates(userId?: string): Promise<Debate[]>;
   deleteDebate(id: number): Promise<void>;
   createMessage(message: InsertMessage): Promise<Message>;
   getMessages(debateId: number): Promise<Message[]>;
@@ -35,18 +35,22 @@ export class SupabaseStorage implements IStorage {
     return data;
   }
 
-  async getDebates(): Promise<Debate[]> {
-    const { data, error } = await supabase
+  async getDebates(userId?: string): Promise<Debate[]> {
+    let query = supabase
       .from("debates")
       .select()
       .order("created_at", { ascending: false });
 
+    if (userId) {
+      query = query.eq("user_id", userId);
+    }
+
+    const { data, error } = await query;
     if (error) throw new Error(`Failed to get debates: ${error.message}`);
     return data || [];
   }
 
   async deleteDebate(id: number): Promise<void> {
-    // Delete messages first (foreign key constraint)
     const { error: messagesError } = await supabase
       .from("messages")
       .delete()
@@ -56,7 +60,6 @@ export class SupabaseStorage implements IStorage {
       throw new Error(`Failed to delete messages: ${messagesError.message}`);
     }
 
-    // Then delete the debate
     const { error: debateError } = await supabase
       .from("debates")
       .delete()
@@ -90,9 +93,15 @@ export class SupabaseStorage implements IStorage {
   }
 
   async updateDebateRound(id: number, round: number): Promise<void> {
+    const updateData: Record<string, any> = { current_round: round };
+    // round 5 = debate completed (after round 4)
+    if (round >= 5) {
+      updateData.completed_at = new Date().toISOString();
+    }
+
     const { error } = await supabase
       .from("debates")
-      .update({ current_round: round })
+      .update(updateData)
       .eq("id", id);
 
     if (error) throw new Error(`Failed to update debate round: ${error.message}`);

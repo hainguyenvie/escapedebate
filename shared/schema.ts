@@ -9,6 +9,8 @@ export interface Debate {
   moderator_intro?: string;
   rating?: number | null;
   created_at: string;
+  completed_at?: string | null;
+  user_id?: string | null;
 }
 
 export interface Message {
@@ -26,6 +28,7 @@ export const insertDebateSchema = z.object({
   current_round: z.number().optional(),
   moderator_intro: z.string().optional(),
   rating: z.number().optional().nullable(),
+  user_id: z.string().optional().nullable(),
 });
 
 export const insertMessageSchema = z.object({
