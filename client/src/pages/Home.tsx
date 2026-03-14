@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { DebateHistory } from "@/components/DebateHistory";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import clsx from "clsx";
 import {
   AlertDialog,
@@ -22,6 +23,7 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const createDebate = useCreateDebate();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const [errorOpen, setErrorOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -87,12 +89,13 @@ export default function Home() {
             </div>
           </div>
           <button 
-            onClick={handleStart}
+            onClick={user ? handleStart : () => setLocation("/login")}
             disabled={createDebate.isPending}
+            data-testid="button-enter"
             className="cyber-key-enter-body w-full md:w-40 h-14 md:h-full shrink-0 relative flex items-center justify-center group active:scale-95 transition-transform"
           >
             <div className="cyber-key-enter-top font-black text-slate-500 text-lg md:text-xl justify-center group-hover:text-pink-500 transition-colors">
-              {createDebate.isPending ? "..." : "ENTER"}
+              {createDebate.isPending ? "..." : user ? "ENTER" : "Đăng nhập"}
             </div>
           </button>
         </div>

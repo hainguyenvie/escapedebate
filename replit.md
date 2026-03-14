@@ -48,6 +48,15 @@ shared/
 - `SUPABASE_ANON_KEY` - Supabase anon/public key
 - `OPENAI_API_KEY` - OpenAI API key (user's own key)
 
+## Authentication
+- Google OAuth via Supabase (`supabase.auth.signInWithOAuth`)
+- Frontend Supabase client initialized lazily via `/api/config` endpoint (reads server-side secrets)
+- `AuthProvider` wraps the app in `App.tsx`
+- Login page at `/login` — redirects to `/` after login
+- Header shows user avatar + dropdown (name, email, sign out) when logged in
+- Home page ENTER button → "Đăng nhập" when not logged in, "ENTER" when logged in
+- **Supabase setup required**: Enable Google provider in Supabase Dashboard → Authentication → Providers → Google
+
 ## User Preferences
 - Vietnamese language for UI text
 - Simple, clean approach preferred
