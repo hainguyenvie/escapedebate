@@ -19,11 +19,18 @@ async function callOpenAI(params: Parameters<typeof openai.chat.completions.crea
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      const result = await openai.chat.completions.create({
-        ...params,
-        signal: AbortSignal.timeout(OPENAI_TIMEOUT_MS),
-      } as Parameters<typeof openai.chat.completions.create>[0]);
-      return result;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
+      try {
+        const result = await openai.chat.completions.create(
+          params,
+          { signal: controller.signal }
+        );
+        clearTimeout(timer);
+        return result;
+      } finally {
+        clearTimeout(timer);
+      }
     } catch (err: unknown) {
       lastError = err as Error;
       const e = err as { status?: number; message?: string; name?: string; code?: string };
