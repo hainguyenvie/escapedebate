@@ -135,7 +135,7 @@ export async function registerRoutes(
       const oppositeSideText = input.side === "support" ? "Phản đối" : "Ủng hộ";
 
       const refinementResponse = await callOpenAI({
-        model: "gpt-4.5-mini",
+        model: "gpt-5-mini",
         messages: [
           {
             role: "system",
@@ -226,7 +226,7 @@ LƯU Ý: Tuyệt đối từ chối các nội dung CHÍNH TRỊ dù ở bất k
 - KHÔNG đặt câu hỏi, KHÔNG kêu gọi phản hồi.`;
 
         const aiResponse = await callOpenAI({
-          model: "gpt-4.5-mini",
+          model: "gpt-5-mini",
           messages: [{ role: "system", content: aiOpeningPrompt }]
         });
 
@@ -475,7 +475,7 @@ YÊU CẦU THÁI ĐỘ:
 
         // 5. Call AI (Phản biện lại User)
         const response = await callOpenAI({
-          model: "gpt-4.5-mini",
+          model: "gpt-5-mini",
           messages: [
             { role: "system", content: systemPrompt },
             ...trimHistory(history.map(m => ({ role: m.role as "user" | "assistant", content: m.content })))
@@ -593,7 +593,7 @@ YÊU CẦU:
 ĐỊNH DẠNG: Đoạn văn thuần túy (không cần JSON).`;
 
           const aiAnswerResponse = await callOpenAI({
-            model: "gpt-4.5-mini",
+            model: "gpt-5-mini",
             messages: [
               { role: "system", content: aiAnswerPrompt },
               ...trimHistory((await storage.getMessages(id)).map(m => ({
@@ -636,7 +636,7 @@ YÊU CẦU THÁI ĐỘ:
 ĐỊNH DẠNG: Một đoạn văn nghị luận hùng hồn, giàu cảm xúc và gây ấn tượng mạnh để khép lại tranh luận.`;
 
             const v4Response = await callOpenAI({
-              model: "gpt-4.5-mini",
+              model: "gpt-5-mini",
               messages: [
                 { role: "system", content: aiV4Prompt },
                 ...trimHistory((await storage.getMessages(id)).map(m => ({
@@ -753,7 +753,7 @@ YÊU CẦU THÁI ĐỘ:
 
           // Call AI to start next round
           const response = await callOpenAI({
-            model: "gpt-4.5-mini",
+            model: "gpt-5-mini",
             messages: [
               { role: "system", content: aiOpeningSystemPrompt },
               // Lấy history bao gồm cả moderator summary vừa tạo (trimmed)
@@ -1167,7 +1167,7 @@ Rule: Tiếng Việt, văn phong trang trọng, chuyên nghiệp, khách quan.`;
 
   const recentHistory = trimHistory(fullHistory);
   const moderatorSummaryResponse = await callOpenAI({
-    model: "gpt-4.5-mini",
+    model: "gpt-5-mini",
     messages: [
       { role: "system", content: moderatorSystemPrompt },
       {
