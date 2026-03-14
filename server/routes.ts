@@ -29,6 +29,13 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
+  app.get("/api/config", (_req, res) => {
+    res.json({
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+    });
+  });
+
   app.get(api.debates.list.path, async (req, res) => {
     const debates = await storage.getDebates();
     res.json(debates);
