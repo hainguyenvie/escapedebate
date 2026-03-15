@@ -19,9 +19,20 @@ export function Header() {
         setMenuOpen(false);
       }
     }
+
+    function handleScroll() {
+      if (menuOpen) {
+        setMenuOpen(false);
+      }
+    }
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    window.addEventListener("scroll", handleScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [menuOpen]);
 
   const handleAvatarClick = () => {
     if (btnRef.current) {
@@ -37,8 +48,8 @@ export function Header() {
   const dropdown = menuOpen ? createPortal(
     <div
       ref={menuRef}
-      style={{ top: menuPos.top, right: menuPos.right, position: "fixed", zIndex: 99999 }}
-      className="bg-white rounded-2xl shadow-xl border border-slate-100 py-2 w-52"
+      style={{ top: menuPos.top, right: menuPos.right }}
+      className="fixed z-[99999] bg-white rounded-2xl shadow-xl border border-slate-100 py-2 w-52"
     >
       <div className="px-4 py-2 border-b border-slate-100">
         <p className="text-xs font-semibold text-slate-700 truncate" data-testid="text-username">
