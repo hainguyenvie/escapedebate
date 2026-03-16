@@ -19,7 +19,7 @@ export function Footer() {
 
               {/* About text */}
               <div className="flex items-center">
-                <div className="text-xs md:text-sm leading-relaxed text-slate-600 space-y-4">
+                <div className="text-xs md:text-sm leading-relaxed text-slate-600 space-y-4 text-justify">
                   <p>
                     ESCAPE AI Debate là giải pháp ứng dụng Trí tuệ nhân tạo nhằm kiến tạo môi trường rèn luyện tư duy phản biện một cách trực quan và hiện đại cho người trẻ. Không đơn thuần là một công cụ hỏi đáp thông thường, nền tảng đóng vai trò như một "đối trọng tư duy", giúp bạn bóc tách các lớp định kiến và bước ra khỏi "Echo Chamber" (Buồng vọng thông tin).
                   </p>
