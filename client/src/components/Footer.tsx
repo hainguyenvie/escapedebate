@@ -19,9 +19,9 @@ export function Footer() {
 
               {/* About text */}
               <div className="flex items-center">
-                <div className="text-sm md:text-base leading-relaxed text-slate-600 font-semibold space-y-4">
+                <div className="text-xs md:text-sm leading-relaxed text-slate-600 space-y-4">
                   <p>
-                    ESCAPE AI Debate là giải pháp ứng dụng Trí tuệ nhân tạo nhằm kiến tạo môi trường rèn luyện tư duy phản biện một cách trực quan và hiện đại cho người trẻ. Không đơn thuần là một công cụ hỏi đáp thông thường, nền tảng đóng vai trò như một <strong className="whitespace-nowrap">"đối trọng tư duy"</strong>, giúp bạn bóc tách các lớp định kiến và bước ra khỏi <strong className="whitespace-nowrap">"Echo Chamber" (Buồng vọng thông tin)</strong>.
+                    ESCAPE AI Debate là giải pháp ứng dụng Trí tuệ nhân tạo nhằm kiến tạo môi trường rèn luyện tư duy phản biện một cách trực quan và hiện đại cho người trẻ. Không đơn thuần là một công cụ hỏi đáp thông thường, nền tảng đóng vai trò như một "đối trọng tư duy", giúp bạn bóc tách các lớp định kiến và bước ra khỏi "Echo Chamber" (Buồng vọng thông tin).
                   </p>
                   <p>
                     Sứ mệnh của chúng tôi là cổ vũ thói quen đặt câu hỏi và khai phóng góc nhìn đa chiều thông qua những cuộc tranh biện logic với AI. Tại ESCAPE, chúng tôi tin rằng công nghệ không sinh ra để nghĩ thay thế con người, mà để thúc đẩy chúng ta suy nghĩ sâu sắc hơn. Đó chính là nền tảng để mỗi người trẻ trở thành một công dân số bản lĩnh, tỉnh táo và làm chủ vận mệnh tư duy của chính mình trước mọi luồng thông tin biến động.
